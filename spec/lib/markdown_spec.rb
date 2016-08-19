@@ -16,7 +16,7 @@ describe 'markdown' do
 
       context 'h3 with inline link' do
         let(:raw) { '### [rails_panel](https://github.com/dejan/rails_panel)' }
-        let(:html) { %(<h3 id="rails_panel"><a href="https://github.com/dejan/rails_panel" target="_blank">rails_panel</a></h3>) }
+        let(:html) { %(<h3 id="rails_panel"><a href="https://github.com/dejan/rails_panel">rails_panel</a></h3>) }
         it { is_expected.to eq(html) }
       end
     end
@@ -478,30 +478,21 @@ describe 'markdown' do
     end
 
     describe 'Escape HTML tags' do
-      context '<xxx> or a book names' do
-        let(:raw) { '<Enterprise Integration Patterns> book' }
-
-        describe '#inner_html' do
-          subject { super().inner_html }
-          it { is_expected.to eq('<p>&lt;Enterprise Integration Patterns&gt; book</p>') }
-        end
-      end
-
       context '<img> tag' do
-        let(:raw) { "<img src='aaa.jpg' /> aaa" }
+        let(:raw) { %(<img src="aaa.jpg" class="bb" /> aaa) }
 
         describe '#inner_html' do
           subject { super().inner_html }
-          it { is_expected.to eq("<p>&lt;img src='aaa.jpg' /&gt; aaa</p>") }
+          it { is_expected.to eq(%(<p><img src="aaa.jpg" class="bb"> aaa</p>)) }
         end
       end
 
-      context '<b> tag' do
-        let(:raw) { '<b>aaa</b>' }
+      context '<script> tag' do
+        let(:raw) { '<script>aaa</script>' }
 
         describe '#inner_html' do
           subject { super().inner_html }
-          it { is_expected.to eq('<p>&lt;b&gt;aaa&lt;/b&gt;</p>') }
+          it { is_expected.to eq('<script>aaa</script>') }
         end
       end
 
@@ -593,7 +584,7 @@ end
       end
       let(:out) do
         %(<h2 id="Markdown">Markdown</h2>
-<p>Markdown is a text formatting syntax inspired on plain text email. In the words of its creator, <a href="http://daringfireball.net/" target="_blank">John Gruber</a>:</p>
+<p>Markdown is a text formatting syntax inspired on plain text email. In the words of its creator, <a href="http://daringfireball.net/">John Gruber</a>:</p>
 
 <blockquote>
 <p>The idea is that a Markdown-formatted document should be publishable as-is, as plain text, without looking like it’s been marked up with tags or formatting instructions.</p>
@@ -661,8 +652,8 @@ _emphasize_    __strong__</code></pre>
 </table></div><h3 id="Links">Links</h3>
 <p>Inline links:</p>
 
-<p><a href="http://url.com/" title="title" target="_blank">link text</a><br>
-<a href="http://url.com/" target="_blank">link text</a></p>
+<p><a href="http://url.com/" title="title">link text</a><br>
+<a href="http://url.com/">link text</a></p>
 <pre class="highlight ruby"><code><span class="k">class</span> <span class="nc">Foo</span>
 <span class="k">end</span></code></pre>)
       end

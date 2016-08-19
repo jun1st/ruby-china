@@ -61,6 +61,7 @@ Rails.application.routes.draw do
       get :no_reply
       get :popular
       get :excellent
+      get :favorites
       get :feed, defaults: { format: 'xml' }
       post :preview
     end
@@ -185,7 +186,7 @@ Rails.application.routes.draw do
   get 'users/city/:id' => 'users#city', as: 'location_users'
   get 'users' => 'users#index', as: 'users'
 
-  constraints(id: /[\w\-\.]*/) do
+  constraints(id: /[a-zA-Z0-9\_\-\.]*/) do
     resources :users, path: '', as: 'users' do
       member do
         # User only

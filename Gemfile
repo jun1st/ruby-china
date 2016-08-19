@@ -4,7 +4,7 @@ else
   source 'https://gems.ruby-china.org'
 end
 
-gem 'rails', '5.0.0'
+gem 'rails', '~> 5.0.0'
 gem 'sprockets'
 gem 'sass-rails'
 gem 'coffee-rails'
@@ -125,6 +125,7 @@ group :development do
 end
 
 group :development, :test do
+  gem 'listen'
   gem 'rubocop', '~> 0.39.0', require: false
   gem 'rspec-rails'
   gem 'factory_girl_rails'

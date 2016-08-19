@@ -1,8 +1,10 @@
 <% title_tag @page.title %>
 
 <div class="row">
-  <%= render 'sidebar' %>
-  <div class="col-sm-9 page-detail">
+  <div class="hide-ios">
+    <%= render 'sidebar' %>
+  </div>
+  <div class="col-md-9 page-detail">
     <div class="panel panel-default">
       <% if !@page.locked or admin? %>
         <div class="panel-heading">
@@ -12,7 +14,7 @@
               <%= @page.comments_count %> 条评论
             <% end %>,
             版本 <%= @page.version %>， <%= t("common.last_modified_at")%> <%= timeago(@page.updated_at) %>
-            <span class="pull-right opts">
+            <span class="pull-right opts hide-ios">
               <%= link_to(icon_tag('pencil'), edit_page_path(@page)) if can? :edit, @page %>
             </span>
           </div>
@@ -36,7 +38,7 @@
             <%= user_avatar_tag(item, :xs) %>
           <% end %>
         </div>
-        <div class="buttons">
+        <div class="buttons hide-ios">
           <%= link_to "发表评论", comments_page_path(@page.slug, anchor: "new_comment"), class: "btn btn-success" %>
         </div>
       </div>

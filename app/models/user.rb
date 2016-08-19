@@ -52,7 +52,7 @@ class User < ApplicationRecord
   validates :login, format: { with: ALLOW_LOGIN_CHARS_REGEXP, message: '只允许数字、大小写字母和下划线' },
                     length: { in: 3..20 },
                     presence: true,
-                    uniqueness: { case_sensitive: true }
+                    uniqueness: { case_sensitive: false }
 
   validates :name, length: { maximum: 20 }
 
@@ -85,12 +85,6 @@ class User < ApplicationRecord
   def email=(val)
     self.email_md5 = Digest::MD5.hexdigest(val || '')
     self[:email] = val
-  end
-
-  def temp_access_token
-    Rails.cache.fetch("user-#{id}-temp_access_token-#{Time.now.strftime('%Y%m%d')}") do
-      SecureRandom.hex
-    end
   end
 
   def password_required?
@@ -218,13 +212,12 @@ class User < ApplicationRecord
 
   def self.find_login(slug)
     return nil unless slug =~ ALLOW_LOGIN_CHARS_REGEXP
-    slug = slug.downcase
-    fetch_by_uniq_keys(login: slug)
+    fetch_by_uniq_keys(login: slug) || where("lower(login) = ?", slug.downcase).take
   end
 
   def self.find_by_login_or_email(login_or_email)
     login_or_email = login_or_email.downcase
-    fetch_by_uniq_keys(login: login_or_email) || fetch_by_uniq_keys(email: login_or_email)
+    find_login(login_or_email) || find_by_email(login_or_email)
   end
 
   def self.find_for_database_authentication(warden_conditions)

@@ -2,12 +2,14 @@
 class ApplicationController < ActionController::Base
   protect_from_forgery
   helper_method :unread_notify_count
+  helper_method :turbolinks_app?
 
   # Addition contents for etag
   etag { current_user.try(:id) }
   etag { unread_notify_count }
   etag { flash }
   etag { Setting.footer_html }
+  etag { Rails.env.development? ? Time.now : Date.current }
 
   before_action do
     resource = controller_name.singularize.to_sym
@@ -88,6 +90,30 @@ class ApplicationController < ActionController::Base
   def unread_notify_count
     return 0 if current_user.blank?
     @unread_notify_count ||= Notification.unread_count(current_user)
+  end
+
+  def authenticate_user!(opts = {})
+    if turbolinks_app?
+      render plain: '401 Unauthorized', status: 401 if current_user.blank?
+    else
+      super(opts)
+    end
+  end
+
+  def current_user
+    if doorkeeper_token
+      return @current_user if defined? @current_user
+      @current_user ||= User.find_by_id(doorkeeper_token.resource_owner_id)
+      sign_in @current_user
+      @current_user
+    else
+      super
+    end
+  end
+
+  def turbolinks_app?
+    agent_str = request.user_agent.to_s
+    agent_str.include?('turbolinks-app')
   end
 
   private

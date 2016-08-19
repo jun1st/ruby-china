@@ -21,19 +21,20 @@
   <title><%= content_for?(:title) ? yield(:title) : Setting.app_name %></title>
   <meta name="apple-mobile-web-app-capable" content="no">
   <meta content='True' name='HandheldFriendly' />
-  <link rel="apple-touch-icon-precomposed" href="<%= cached_asset_path("ios-icon.png") %>" />
-  <link rel="shortcut icon" href="<%= cached_asset_path("big_logo.png") %>" />
+  <link rel="apple-touch-icon-precomposed" href="<%= asset_path("ios-icon.png") %>" />
+  <link rel="shortcut icon" href="<%= asset_path("big_logo.png") %>" />
   <link rel="alternate" type="application/rss+xml" title="订阅最新帖" href="<%= main_app.feed_topics_url %>" />
-  <link rel="mask-icon" href="<%= cached_asset_path("mask.svg") %>"/>
-  <%= stylesheet_link_tag_with_cached "front" %>
+  <link rel="mask-icon" href="<%= asset_path("mask.svg") %>"/>
+  <%= stylesheet_link_tag "front" %>
+  <%= stylesheet_link_tag "turbolinks-app" if turbolinks_app? %>
   <%= action_cable_meta_tag %>
-  <%= javascript_include_tag_with_cached "app" %>
-  <script src="//ruby-china-files.b0.upaiyun.com/assets/d3.min.js" data-turbolinks-track type="text/javascript"></script>
-  <script src="//ruby-china-files.b0.upaiyun.com/assets/cal-heatmap.min.js" data-turbolinks-track type="text/javascript"></script>
+  <%= javascript_include_tag "app" %>
+  <script src="//ruby-china-files.b0.upaiyun.com/assets/d3.min.js" data-turbolinks-track="reload" type="text/javascript"></script>
+  <script src="//ruby-china-files.b0.upaiyun.com/assets/cal-heatmap.min.js" data-turbolinks-track="reload" type="text/javascript"></script>
   <%= csrf_meta_tag %>
   <%= raw Setting.custom_head_html %>
 </head>
-<body class="page-<%= controller_name %>" data-controller-name="<%= controller_name %>">
+<body class="page-<%= controller_name %><%= ' infinite-scroll' if turbolinks_app? %>" data-controller-name="<%= controller_name %>">
   <div class="header">
     <nav class="navbar navbar-inverse navbar-fixed-top navbar-default">
       <div class="container">
@@ -107,8 +108,7 @@
 
   <% if mobile? %>
     <script type="text/javascript">
-    app_mobile = true;
-    $('body').animate({ scrollTop: -1 },0);
+    App.mobile = true;
     </script>
   <% end %>
   <script type="text/javascript" data-turbolinks-eval="false">
@@ -118,7 +118,9 @@
     App.locale = "<%= I18n.locale %>";
     <% if current_user %>
       App.current_user_id = <%= current_user.id %>;
-      App.access_token = "<%= current_user.temp_access_token %>";
+    <% end %>
+    <% if turbolinks_app? %>
+      App.turbolinks = true;
     <% end %>
   </script>
   <%= yield :scripts %>

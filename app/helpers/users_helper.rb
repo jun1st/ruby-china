@@ -50,8 +50,10 @@ module UsersHelper
         image_tag(user.letter_avatar_url(width * 2), class: img_class)
       end
 
+    options = {}
+
     if opts[:link] != false
-      link_to(raw(img), user_path(user))
+      link_to(raw(img), user_path(user), options)
     else
       raw img
     end
@@ -106,7 +108,7 @@ module UsersHelper
     opts[:class] ||= 'btn btn-primary btn-block'
     class_names = "button-follow-user #{opts[:class]}"
     icon = '<i class="fa fa-user"></i>'
-    login = user.login.downcase
+    login = user.login
     if followed
       link_to raw("#{icon} <span>取消关注</span>"), '#', 'data-id' => login, class: "#{class_names} active"
     else

@@ -1,0 +1,212 @@
+.hide-ios { display: none !important; }
+body {
+  padding-top: 0;
+  background: #f0f0f0;
+}
+
+.header, .footer,
+.index-sections, .index-locations { display: none; }
+#node-selector .panel {
+  display: block;
+  padding: 0px;
+  box-shadow: 0 0 0;
+  border: 0px;
+  .panel-body { border:0; }
+  .media-left { display: none; }
+}
+
+.container {
+  padding: 0;
+}
+
+.sidebar { padding: 0; display: none; }
+#main > .row {
+  margin: 0;
+  .col-md-9,
+  .col-md-8,
+  .col-md-6,
+  .col-md-5,
+  .col-md-4,
+  .col-md-3 { padding: 0; }
+}
+
+.panel {
+  border-radius: 0;
+  margin-bottom: 0 !important;
+  box-shadow: 0 0 0;
+  border-top: 1px solid #f0f0f0;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.alert {
+  padding: 10px;
+  font-size: 14px;
+  margin-bottom: 15px;
+}
+
+.form-control {
+  -webkit-appearance: none;
+}
+
+.pagination { display: none; }
+
+.markdown {
+  pre {
+    margin-left: -15px;
+    margin-right: -15px;
+
+    code {
+      margin: 8px;
+    }
+  }
+}
+
+.topics {
+  .topic-list-heading {
+    display: none;
+  }
+}
+
+.editor-toolbar {
+  .dropdown-menu {
+    left: auto;
+    right: 0;
+  }
+}
+
+.topic-editor {
+  height: 100px;
+}
+
+.no-result { display: none; }
+
+.new_reply {
+  .submit-buttons {
+    #reply-button { display: block; width: 100%; }
+    .help-inline,
+    .pull-right { display: none; }
+  }
+}
+
+.edit-reply {
+  .panel-heading { display: none; }
+  .col-xs-2 { display: block; width: 50%; }
+}
+
+.topics {
+  .topic {
+    min-height: 60px;
+    &:active {
+      background: #f9f9f9;
+    }
+
+    .avatar {
+      padding-top: 3px;
+    }
+
+    .title {
+      margin-bottom: 0px;
+      a {
+        font-size: 14px;
+        line-height: 22px !important;
+      }
+      a:hover,
+      a:active {
+        text-decoration: none; }
+    }
+
+    .info {
+      a.node {
+        color: #909090;
+      }
+    }
+
+    &.topic-visited {
+      .title {
+        a:link,
+        a:visited { color: #777; }
+      }
+      .info {
+        color: #bbb;
+        a { color: #bbb; }
+      }
+      .count {
+        a:link,
+        a:visited {
+          color: #eee;
+        }
+      }
+    }
+
+    .count {
+      padding-top: 0px;
+      padding-left: 0;
+      width: auto;
+      text-align: right;
+      a:link,
+      a:hover,
+      a:visited {
+        line-height: 11px;
+        min-width: 28px;
+        color: #EB5424;
+        text-align: right;
+        border-radius: 80px;
+        padding: 0;
+        display: inline-block;
+        text-decoration: none;
+      }
+
+      a:link { background: transparent; color: #aaa;}
+      a:hover { background: transparent;  }
+      a.state-true,
+      a:visited { background: transparent; color: #eee; }
+    }
+  }
+}
+
+.topic-detail {
+  .label-awesome {
+    padding: 10px 15px;
+  }
+
+  .panel-heading {
+    h1 {
+      font-size: 18px;
+    }
+  }
+
+  .markdown {
+    .zoom-image {
+      overflow: hidden;
+      display: block;
+      margin: 8px -15px;
+      img {  width: 100%; }
+    }
+  }
+}
+
+.page-pages {
+  .wiki-sidebar { display: block; }
+}
+
+.page-users {
+  .sidebar {
+    display: block;
+    .profile {
+      .opts { display: none; }
+    }
+  }
+
+  #user_github_repos { display: none; }
+  .nav-tabs {
+    margin-top: 15px;
+    li > a {
+      padding: 8px 8px;
+    }
+
+  }
+
+  .node-topics {
+    border-bottom: 1px solid #ddd;
+  }
+}
