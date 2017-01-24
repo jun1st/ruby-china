@@ -2,7 +2,7 @@ FactoryGirl.define do
   factory :user do
     sequence(:name) { |n| "name#{n}" }
     sequence(:login) { |n| "login#{n}" }
-    sequence(:email) { |n| "email#{n}@ruby-china.org" }
+    sequence(:email) { |n| "email#{n}@gethomeland.com" }
     password 'password'
     password_confirmation 'password'
     location 'China'
@@ -15,7 +15,7 @@ FactoryGirl.define do
   end
 
   factory :admin, parent: :user do
-    email Setting.admin_emails.first
+    email Setting.admin_emails.split("\n").first
   end
 
   factory :wiki_editor, parent: :user do
@@ -27,7 +27,7 @@ FactoryGirl.define do
   end
 
   factory :newbie, parent: :user do
-    created_at 1.days.ago
+    created_at 1.hours.ago
   end
 
   factory :blocked_user, parent: :user do

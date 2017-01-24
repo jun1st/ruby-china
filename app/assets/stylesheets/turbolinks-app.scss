@@ -1,7 +1,33 @@
+@import "vars";
+
+$primary: #e23c28;
+$primary-dark: #af2913;
+
 .hide-ios { display: none !important; }
 body {
   padding-top: 0;
-  background: #f0f0f0;
+  background: #e9e3e3;
+}
+
+.btn-primary {
+  background: $primary !important;
+  border-color: $primary-dark !important;
+
+  &.active,
+  &:active {
+    background: $primary-dark !important;
+    border-color: $primary-dark !important;
+  }
+}
+
+.btn-danger {
+  background: #555 !important;
+  border-color: #333 !important;
+
+  &:active {
+    background: #333 !important;
+    border-color: #111 !important;
+  }
 }
 
 .header, .footer,
@@ -34,18 +60,55 @@ body {
   border-radius: 0;
   margin-bottom: 0 !important;
   box-shadow: 0 0 0;
-  border-top: 1px solid #f0f0f0;
-  border-bottom: 1px solid #e0e0e0;
+  border-top: 0px solid #f0f0f0;
+  border-bottom: 0px solid #ece2d7;
+
+  &:last-child {
+    border-bottom: 0;
+  }
+
+  .panel-heading,
+  .panel-footer {
+    background: #fffbf8;
+    border-color: #ece2d7;
+    border-radius: 0 !important;
+  }
 }
 
+.container > .alert {
+  margin-right: 0;
+}
 .alert {
+  border-radius: 0;
+  border: 0;
+  box-shadow: 0;
   padding: 10px;
   font-size: 14px;
-  margin-bottom: 15px;
+  border-top: 0;
+  margin-bottom: 0px;
+
+  .close {
+    opacity: .4;
+    margin-top: 2px;
+  }
+}
+.alert-success {
+  background: #c3ffb8;
+  border-color: #b6f3b8;
+  color: #00a21c;
+}
+.alert-warning {
+  background: #fff8b8;
+  color: #CD8546;
+  border-color: #faebcc;
 }
 
 .form-control {
   -webkit-appearance: none;
+
+  &:focus {
+    border-color: #ccc;
+  }
 }
 
 .pagination { display: none; }
@@ -75,7 +138,7 @@ body {
 }
 
 .topic-editor {
-  height: 100px;
+  height: 140px;
 }
 
 .no-result { display: none; }
@@ -97,7 +160,7 @@ body {
   .topic {
     min-height: 60px;
     &:active {
-      background: #f9f9f9;
+      background: #f5f5f5;
     }
 
     .avatar {
@@ -112,7 +175,8 @@ body {
       }
       a:hover,
       a:active {
-        text-decoration: none; }
+        text-decoration: none;
+      }
     }
 
     .info {
@@ -124,7 +188,7 @@ body {
     &.topic-visited {
       .title {
         a:link,
-        a:visited { color: #777; }
+        a:visited { color: #666; }
       }
       .info {
         color: #bbb;
@@ -133,7 +197,7 @@ body {
       .count {
         a:link,
         a:visited {
-          color: #eee;
+          color: #ddd;
         }
       }
     }
@@ -148,7 +212,6 @@ body {
       a:visited {
         line-height: 11px;
         min-width: 28px;
-        color: #EB5424;
         text-align: right;
         border-radius: 80px;
         padding: 0;
@@ -156,10 +219,10 @@ body {
         text-decoration: none;
       }
 
-      a:link { background: transparent; color: #aaa;}
+      a:link { background: transparent; color: #666;}
       a:hover { background: transparent;  }
       a.state-true,
-      a:visited { background: transparent; color: #eee; }
+      a:visited { background: transparent; color: #ddd; }
     }
   }
 }
@@ -167,6 +230,14 @@ body {
 .topic-detail {
   .label-awesome {
     padding: 10px 15px;
+    margin-top: -1px;
+    background: #fff2c4;
+    border: 0;
+    color: $primary;
+    .fa.awesome {
+      color: $primary;
+    }
+    a { color: #cccaa2; }
   }
 
   .panel-heading {
@@ -175,12 +246,59 @@ body {
     }
   }
 
+  .info {
+    color: #999;
+
+    .user-name {
+      color: #666;
+    }
+    .node { color: $primary; }
+  }
+
   .markdown {
     .zoom-image {
       overflow: hidden;
       display: block;
       margin: 8px -15px;
       img {  width: 100%; }
+    }
+
+    pre {
+      background: #fffefc !important;
+      border-color: #f9f4f0 !important;
+      code {
+        background: #fffefc !important;
+      }
+    }
+  }
+}
+
+.notifications {
+  .notification-group {
+    .group-title {
+      margin: 0 -15px;
+      padding-left: 15px;
+      padding-right: 15px;
+    }
+  }
+}
+
+.opts {
+  a:link,
+  a:visited {
+    color: #444 !important;
+  }
+  a.active {
+    .fa { color: $primary; }
+  }
+}
+
+.page-topics {
+  .panel {
+    &.topic-detail,
+    &#replies,
+    &#reply {
+      border-bottom-width: 1px;
     }
   }
 }
@@ -201,6 +319,7 @@ body {
   .nav-tabs {
     margin-top: 15px;
     li > a {
+      border: 0;
       padding: 8px 8px;
     }
 

@@ -3,6 +3,29 @@ require 'rails_helper'
 describe Reply, type: :model do
   let(:user) { create(:user) }
 
+  describe 'validates' do
+    describe 'topic close' do
+      it 'should not valid when Topic was closed' do
+        t = create :topic, closed_at: Time.now
+        r = build(:reply)
+        expect(r.valid?).to eq true
+        r.topic_id = t.id
+        expect(r.valid?).not_to eq true
+      end
+
+      it 'should not allowed update replies when Topic was closed' do
+        t = create :topic
+        r = create(:reply, topic: t)
+        expect(r.valid?).to eq true
+        t.close!
+        r.body = "new body"
+        expect(r.valid?).not_to eq true
+        expect(r.save).to eq false
+        expect(r.errors.full_messages.join('')).to include('已关闭，不再接受回帖或修改回帖')
+      end
+    end
+  end
+
   describe 'notifications' do
     it 'should delete mention notification after destroy' do
       expect do
@@ -110,38 +133,6 @@ describe Reply, type: :model do
     end
   end
 
-  describe 'format body' do
-    it 'should covert body with Markdown on create' do
-      r = create(:reply, body: '*foo*')
-      expect(r.body_html).to eq('<p><em>foo</em></p>')
-    end
-
-    it 'should covert body on save' do
-      r = create(:reply, body: '*foo*')
-      old_html = r.body_html
-      r.body = '*bar*'
-      r.save
-      expect(r.body_html).not_to eq(old_html)
-    end
-
-    it 'should not store body_html when it not changed' do
-      r = create(:reply, body: '*foo*')
-      r.body = '*fooaa*'
-      allow(r).to receive(:body_changed?).and_return(false)
-      old_html = r.body_html
-      r.save
-      expect(r.body_html).to eq(old_html)
-    end
-
-    context '#link_mention_user' do
-      it 'should add link to mention users' do
-        body = '@foo'
-        reply = create(:reply, body: body)
-        expect(reply.body_html).to eq('<p><a href="/foo" class="at_user" title="@foo"><i>@</i>foo</a></p>')
-      end
-    end
-  end
-
   describe 'ban words for Reply body' do
     let(:topic) { create(:topic) }
     it 'should work' do
@@ -232,6 +223,52 @@ describe Reply, type: :model do
       reply = Reply.create_system_event(topic_id: 1, action: 'bbb')
       expect(reply.system_event?).to eq true
       expect(reply.new_record?).to eq false
+    end
+  end
+
+  describe '.default_notification' do
+    let(:reply) { create(:reply, topic: create(:topic)) }
+
+    it 'should work' do
+      val = {
+        notify_type: 'topic_reply',
+        target_type: 'Reply', target_id: reply.id,
+        second_target_type: 'Topic', second_target_id: reply.topic_id,
+        actor_id: reply.user_id
+      }
+      expect(reply.default_notification).to eq val
+    end
+  end
+
+  describe '.notification_receiver_ids' do
+    let(:mentioned_user_ids) { [1, 2, 3] }
+    let(:user) { create(:user, follower_ids: [2, 3, 5, 7, 9]) }
+    let(:topic) { create(:topic, user_id: 10, follower_ids: [1, 3, 7, 11, 12, 14, user.id]) }
+    let(:reply) { create(:reply, user: user, topic: topic, mentioned_user_ids: mentioned_user_ids) }
+
+    it 'should be a Array' do
+      expect(reply.notification_receiver_ids).to be_a(Array)
+    end
+
+    it 'should not include mentioned_user_ids' do
+      expect(reply.notification_receiver_ids).not_to include(*reply.mentioned_user_ids)
+    end
+
+    it 'should not include topic follower and topic author' do
+      expect(reply.notification_receiver_ids).to include(10)
+      expect(reply.notification_receiver_ids).to include(*[7, 11, 12, 14])
+    end
+
+    it 'should not include reply user_id' do
+      expect(reply.notification_receiver_ids).not_to include(user.id)
+    end
+
+    it 'should include replyer followers' do
+      expect(reply.notification_receiver_ids).to include(*[5, 7, 9])
+    end
+
+    it 'should removed duplicate' do
+      expect(reply.notification_receiver_ids).to eq reply.notification_receiver_ids.uniq
     end
   end
 end

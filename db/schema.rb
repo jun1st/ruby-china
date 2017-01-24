@@ -10,10 +10,11 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20160710111853) do
+ActiveRecord::Schema.define(version: 20161230094832) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
+  enable_extension "pg_stat_statements"
 
   create_table "authorizations", force: :cascade do |t|
     t.string   "provider",                null: false
@@ -26,7 +27,6 @@ ActiveRecord::Schema.define(version: 20160710111853) do
 
   create_table "comments", force: :cascade do |t|
     t.text     "body",             null: false
-    t.text     "body_html"
     t.integer  "user_id",          null: false
     t.string   "commentable_type"
     t.integer  "commentable_id"
@@ -45,7 +45,6 @@ ActiveRecord::Schema.define(version: 20160710111853) do
     t.datetime "last_actived_at"
     t.datetime "created_at",      null: false
     t.datetime "updated_at",      null: false
-    t.index ["user_id", "platform"], name: "index_devices_on_user_id_and_platform", using: :btree
     t.index ["user_id"], name: "index_devices_on_user_id", using: :btree
   end
 
@@ -64,12 +63,6 @@ ActiveRecord::Schema.define(version: 20160710111853) do
     t.index ["name"], name: "index_locations_on_name", using: :btree
   end
 
-  create_table "monkeys", force: :cascade do |t|
-    t.string   "name"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-  end
-
   create_table "new_notifications", force: :cascade do |t|
     t.integer  "user_id",            null: false
     t.integer  "actor_id"
@@ -83,7 +76,6 @@ ActiveRecord::Schema.define(version: 20160710111853) do
     t.datetime "read_at"
     t.datetime "created_at",         null: false
     t.datetime "updated_at",         null: false
-    t.index ["user_id", "notify_type"], name: "index_new_notifications_on_user_id_and_notify_type", using: :btree
     t.index ["user_id"], name: "index_new_notifications_on_user_id", using: :btree
   end
 
@@ -147,6 +139,7 @@ ActiveRecord::Schema.define(version: 20160710111853) do
     t.datetime "updated_at"
     t.integer  "owner_id"
     t.string   "owner_type"
+    t.integer  "level",        default: 0,  null: false
     t.index ["owner_id", "owner_type"], name: "index_oauth_applications_on_owner_id_and_owner_type", using: :btree
     t.index ["uid"], name: "index_oauth_applications_on_uid", unique: true, using: :btree
   end
@@ -161,7 +154,6 @@ ActiveRecord::Schema.define(version: 20160710111853) do
     t.text     "body",                   null: false
     t.datetime "created_at"
     t.datetime "updated_at"
-    t.index ["page_id", "version"], name: "index_page_versions_on_page_id_and_version", using: :btree
     t.index ["page_id"], name: "index_page_versions_on_page_id", using: :btree
   end
 
@@ -169,7 +161,6 @@ ActiveRecord::Schema.define(version: 20160710111853) do
     t.string   "slug",                           null: false
     t.string   "title",                          null: false
     t.text     "body",                           null: false
-    t.text     "body_html"
     t.boolean  "locked",         default: false
     t.integer  "version",        default: 0,     null: false
     t.integer  "editor_ids",     default: [],    null: false, array: true
@@ -194,7 +185,6 @@ ActiveRecord::Schema.define(version: 20160710111853) do
     t.integer  "user_id",                         null: false
     t.integer  "topic_id",                        null: false
     t.text     "body",                            null: false
-    t.text     "body_html"
     t.integer  "state",              default: 1,  null: false
     t.integer  "liked_user_ids",     default: [],              array: true
     t.integer  "likes_count",        default: 0
@@ -205,6 +195,7 @@ ActiveRecord::Schema.define(version: 20160710111853) do
     t.string   "action"
     t.string   "target_type"
     t.string   "target_id"
+    t.index ["deleted_at"], name: "index_replies_on_deleted_at", using: :btree
     t.index ["topic_id"], name: "index_replies_on_topic_id", using: :btree
     t.index ["user_id"], name: "index_replies_on_user_id", using: :btree
   end
@@ -244,6 +235,7 @@ ActiveRecord::Schema.define(version: 20160710111853) do
     t.datetime "deleted_at"
     t.datetime "created_at"
     t.datetime "updated_at"
+    t.index ["deleted_at"], name: "index_sites_on_deleted_at", using: :btree
     t.index ["site_node_id"], name: "index_sites_on_site_node_id", using: :btree
     t.index ["url"], name: "index_sites_on_url", using: :btree
   end
@@ -255,7 +247,6 @@ ActiveRecord::Schema.define(version: 20160710111853) do
     t.integer  "status"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["team_id", "user_id"], name: "index_team_users_on_team_id_and_user_id", unique: true, using: :btree
     t.index ["team_id"], name: "index_team_users_on_team_id", using: :btree
     t.index ["user_id"], name: "index_team_users_on_user_id", using: :btree
   end
@@ -265,7 +256,6 @@ ActiveRecord::Schema.define(version: 20160710111853) do
     t.integer  "node_id",                               null: false
     t.string   "title",                                 null: false
     t.text     "body",                                  null: false
-    t.text     "body_html"
     t.integer  "last_reply_id"
     t.integer  "last_reply_user_id"
     t.string   "last_reply_user_login"
@@ -286,21 +276,35 @@ ActiveRecord::Schema.define(version: 20160710111853) do
     t.datetime "updated_at"
     t.datetime "closed_at"
     t.integer  "team_id"
+    t.index ["deleted_at"], name: "index_topics_on_deleted_at", using: :btree
     t.index ["excellent"], name: "index_topics_on_excellent", using: :btree
     t.index ["last_active_mark"], name: "index_topics_on_last_active_mark", using: :btree
     t.index ["likes_count"], name: "index_topics_on_likes_count", using: :btree
-    t.index ["node_id"], name: "index_topics_on_node_id", using: :btree
+    t.index ["node_id", "deleted_at"], name: "index_topics_on_node_id_and_deleted_at", using: :btree
     t.index ["suggested_at"], name: "index_topics_on_suggested_at", using: :btree
     t.index ["team_id"], name: "index_topics_on_team_id", using: :btree
     t.index ["user_id"], name: "index_topics_on_user_id", using: :btree
   end
 
-  create_table "users", force: :cascade do |t|
-    t.string   "login",                                             null: false
+  create_table "user_ssos", force: :cascade do |t|
+    t.integer  "user_id",      null: false
+    t.string   "uid",          null: false
+    t.string   "username"
+    t.string   "email"
     t.string   "name"
-    t.string   "email",                                             null: false
-    t.string   "email_md5",                                         null: false
-    t.boolean  "email_public",                      default: false, null: false
+    t.string   "avatar_url"
+    t.text     "last_payload", null: false
+    t.datetime "created_at",   null: false
+    t.datetime "updated_at",   null: false
+    t.index ["uid"], name: "index_user_ssos_on_uid", unique: true, using: :btree
+  end
+
+  create_table "users", force: :cascade do |t|
+    t.string   "login",                  limit: 100,                 null: false
+    t.string   "name",                   limit: 100
+    t.string   "email",                                              null: false
+    t.string   "email_md5",                                          null: false
+    t.boolean  "email_public",                       default: false, null: false
     t.string   "location"
     t.integer  "location_id"
     t.string   "bio"
@@ -310,37 +314,44 @@ ActiveRecord::Schema.define(version: 20160710111853) do
     t.string   "twitter"
     t.string   "qq"
     t.string   "avatar"
-    t.boolean  "verified",                          default: false, null: false
-    t.boolean  "hr",                                default: false, null: false
-    t.integer  "state",                             default: 1,     null: false
+    t.boolean  "verified",                           default: false, null: false
+    t.boolean  "hr",                                 default: false, null: false
+    t.integer  "state",                              default: 1,     null: false
     t.string   "tagline"
     t.string   "co"
     t.datetime "created_at"
     t.datetime "updated_at"
-    t.string   "encrypted_password",                default: "",    null: false
+    t.string   "encrypted_password",                 default: "",    null: false
     t.string   "reset_password_token"
     t.datetime "reset_password_sent_at"
     t.datetime "remember_created_at"
-    t.integer  "sign_in_count",                     default: 0,     null: false
+    t.integer  "sign_in_count",                      default: 0,     null: false
     t.datetime "current_sign_in_at"
     t.datetime "last_sign_in_at"
     t.string   "current_sign_in_ip"
     t.string   "last_sign_in_ip"
-    t.string   "password_salt",                     default: "",    null: false
-    t.string   "persistence_token",                 default: "",    null: false
-    t.string   "single_access_token",               default: "",    null: false
-    t.string   "perishable_token",                  default: "",    null: false
-    t.integer  "topics_count",                      default: 0,     null: false
-    t.integer  "replies_count",                     default: 0,     null: false
-    t.integer  "favorite_topic_ids",                default: [],                 array: true
-    t.integer  "blocked_node_ids",                  default: [],                 array: true
-    t.integer  "blocked_user_ids",                  default: [],                 array: true
-    t.integer  "following_ids",                     default: [],                 array: true
-    t.integer  "follower_ids",                      default: [],                 array: true
+    t.string   "password_salt",                      default: "",    null: false
+    t.string   "persistence_token",                  default: "",    null: false
+    t.string   "single_access_token",                default: "",    null: false
+    t.string   "perishable_token",                   default: "",    null: false
+    t.integer  "topics_count",                       default: 0,     null: false
+    t.integer  "replies_count",                      default: 0,     null: false
+    t.integer  "favorite_topic_ids",                 default: [],                 array: true
+    t.integer  "blocked_node_ids",                   default: [],                 array: true
+    t.integer  "blocked_user_ids",                   default: [],                 array: true
+    t.integer  "following_ids",                      default: [],                 array: true
+    t.integer  "follower_ids",                       default: [],                 array: true
     t.string   "type",                   limit: 20
+    t.integer  "failed_attempts",                    default: 0,     null: false
+    t.string   "unlock_token"
+    t.datetime "locked_at"
+    t.integer  "team_users_count"
+    t.index "lower((login)::text) varchar_pattern_ops", name: "index_users_on_lower_login_varchar_pattern_ops", using: :btree
+    t.index "lower((name)::text) varchar_pattern_ops", name: "index_users_on_lower_name_varchar_pattern_ops", using: :btree
     t.index ["email"], name: "index_users_on_email", using: :btree
     t.index ["location"], name: "index_users_on_location", using: :btree
     t.index ["login"], name: "index_users_on_login", using: :btree
+    t.index ["unlock_token"], name: "index_users_on_unlock_token", unique: true, using: :btree
   end
 
 end

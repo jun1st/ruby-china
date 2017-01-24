@@ -11,18 +11,15 @@ class UsersController < ApplicationController
 
   def index
     @total_user_count = User.count
-    @active_users = User.fields_for_list.hot.limit(100)
+    @active_users = User.without_team.fields_for_list.hot.limit(100)
     fresh_when([@total_user_count, @active_users])
   end
 
   def city
-    @location = Location.location_find_by_name(params[:id])
-    if @location.blank?
-      render_404
-      return
-    end
+    location = Location.location_find_by_name(params[:id])
+    render_404 and return if location.nil?
 
-    @users = User.where(location_id: @location.id).fields_for_list
+    @users = User.where(location_id: location.id).without_team.fields_for_list
     @users = @users.order(replies_count: :desc).paginate(page: params[:page], per_page: 60)
 
     render_404 if @users.count == 0
@@ -35,7 +32,7 @@ class UsersController < ApplicationController
   protected
 
   def set_user
-    @user = User.find_login!(params[:id])
+    @user = User.find_by_login!(params[:id])
 
     # 转向正确的拼写
     if @user.login != params[:id]

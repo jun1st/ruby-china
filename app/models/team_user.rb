@@ -2,7 +2,7 @@ class TeamUser < ApplicationRecord
   enum role: %i(owner member)
   enum status: %i(pendding accepted)
 
-  belongs_to :team, touch: true
+  belongs_to :team, touch: true, counter_cache: true
   belongs_to :user
 
   validates :login, :team_id, :role, presence: true, on: :invite
@@ -12,7 +12,7 @@ class TeamUser < ApplicationRecord
 
   before_validation do
     if login.present?
-      u = User.find_login(login)
+      u = User.find_by_login(login)
       self.errors.add(:login, :notfound) if u.blank?
       self.user_id = u&.id
     end

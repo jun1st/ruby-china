@@ -72,9 +72,9 @@ describe User, type: :model do
 
       it 'should work' do
         expect(user1.login).to eq('ReiIs123')
-        expect(User.find_login('ReiIs123').id).to eq(user1.id)
-        expect(User.find_login('reiis123').id).to eq(user1.id)
-        expect(User.find_login('rEIIs123').id).to eq(user1.id)
+        expect(User.find_by_login('ReiIs123').id).to eq(user1.id)
+        expect(User.find_by_login('reiis123').id).to eq(user1.id)
+        expect(User.find_by_login('rEIIs123').id).to eq(user1.id)
       end
     end
   end
@@ -102,10 +102,10 @@ describe User, type: :model do
     it 'user can soft_delete' do
       user_for_delete1.soft_delete
       user_for_delete1.reload
-      expect(user_for_delete1.state).to eq(-1)
+      expect(user_for_delete1.state).to eq('deleted')
       user_for_delete2.soft_delete
       user_for_delete1.reload
-      expect(user_for_delete1.state).to eq(-1)
+      expect(user_for_delete1.state).to eq('deleted')
       expect(user_for_delete1.authorizations).to eq([])
     end
   end
@@ -182,20 +182,38 @@ describe User, type: :model do
   describe 'newbie?' do
     it 'should true when user created_at less than a week' do
       user.verified = false
-      user.created_at = 6.days.ago
+      allow(Setting).to receive(:newbie_limit_time).and_return(1.days.to_i)
+      user.created_at = 6.hours.ago
       expect(user.newbie?).to be_truthy
-    end
-
-    it 'should false when more than a week and have 10+ replies' do
-      user.verified = false
-      user.created_at = 10.days.ago
-      user.replies_count = 10
-      expect(user.newbie?).to be_falsey
     end
 
     it 'should false when user is verified' do
       user.verified = true
       expect(user.newbie?).to be_falsey
+    end
+
+    context 'Unverfied user with 2.days.ago registed.' do
+      let(:user) { build(:user, verified: false, created_at: 2.days.ago) }
+
+      it 'should tru with 1 days limit' do
+        allow(Setting).to receive(:newbie_limit_time).and_return(1.days.to_i)
+        expect(user.newbie?).to be_falsey
+      end
+
+      it 'should false with 3 days limit' do
+        allow(Setting).to receive(:newbie_limit_time).and_return(3.days.to_i)
+        expect(user.newbie?).to be_truthy
+      end
+
+      it 'should false with nil limit' do
+        allow(Setting).to receive(:newbie_limit_time).and_return(nil)
+        expect(user.newbie?).to be_falsey
+      end
+
+      it 'should false with 0 limit' do
+        allow(Setting).to receive(:newbie_limit_time).and_return('0')
+        expect(user.newbie?).to be_falsey
+      end
     end
   end
 
@@ -340,6 +358,7 @@ describe User, type: :model do
         expect(topic.liked_by_user?(user)).to be_falsey
         user.like(topic)
         expect(topic.liked_by_user?(user)).to be_truthy
+        expect(topic.liked_users).to include(user)
       end
     end
   end
@@ -360,29 +379,29 @@ describe User, type: :model do
     end
   end
 
-  describe '#find_login!' do
+  describe '#find_by_login!' do
     let(:user) { create :user }
 
     it 'should work' do
-      u = User.find_login!(user.login)
+      u = User.find_by_login!(user.login)
       expect(u.id).to eq user.id
       expect(u.login).to eq(user.login)
     end
 
     it 'should ignore case' do
-      u = User.find_login!(user.login.upcase)
+      u = User.find_by_login!(user.login.upcase)
       expect(u.id).to eq user.id
     end
 
     it 'should raise DocumentNotFound error' do
       expect do
-        User.find_login!(user.login + '1')
+        User.find_by_login!(user.login + '1')
       end.to raise_error(ActiveRecord::RecordNotFound)
     end
 
     it 'should railse DocumentNotFound if have bad login' do
       expect do
-        User.find_login!(user.login + ')')
+        User.find_by_login!(user.login + ')')
       end.to raise_error(ActiveRecord::RecordNotFound)
     end
 
@@ -392,7 +411,7 @@ describe User, type: :model do
       let(:user2) { create :user, login: 'a2foo' }
 
       it 'should get right user' do
-        u = User.find_login!(user1.login)
+        u = User.find_by_login!(user1.login)
         expect(u.id).to eq user1.id
         expect(u.login).to eq(user1.login)
       end
@@ -519,7 +538,7 @@ describe User, type: :model do
   describe '.letter_avatar_url' do
     let(:user) { create(:user) }
     it 'should work' do
-      expect(user.letter_avatar_url(240)).to include("#{Setting.protocol}://#{Setting.domain}/system/letter_avatars/")
+      expect(user.letter_avatar_url(240)).to include("#{Setting.base_url}/system/letter_avatars/")
     end
   end
 
@@ -544,6 +563,13 @@ describe User, type: :model do
       expect(User.find_for_database_authentication(login: 'foo').id).to eq user.id
       expect(User.find_for_database_authentication(login: 'foobar@gmail.com').id).to eq user.id
       expect(User.find_for_database_authentication(login: 'not found')).to eq nil
+    end
+
+    context 'deleted user' do
+      it "should nil" do
+        user.update_attributes(state: -1)
+        expect(User.find_for_database_authentication(login: 'foo')).to eq nil
+      end
     end
   end
 
@@ -603,6 +629,88 @@ describe User, type: :model do
       ids2 = create_list(:team_user, 2, user: user2).collect(&:team_id)
       expect(user).to receive(:admin?).and_return(true)
       expect(user.team_collection.collect { |_, id| id }).to include(*(ids1 + ids2))
+    end
+  end
+
+  describe 'Search methods' do
+    let(:u) { create :user, bio: '111', tagline: '222' }
+    describe '.indexed_changed?' do
+      it 'login changed work' do
+        expect(u.indexed_changed?).to eq false
+        u.login = u.login + '11'
+        expect(u.indexed_changed?).to eq true
+      end
+
+      it 'name changed work' do
+        expect(u.indexed_changed?).to eq false
+        u.name = u.name + '11'
+        expect(u.indexed_changed?).to eq true
+      end
+
+      it 'email changed work' do
+        expect(u.indexed_changed?).to eq false
+        u.email = u.email + '11'
+        expect(u.indexed_changed?).to eq true
+      end
+
+      it 'bio changed work' do
+        expect(u.indexed_changed?).to eq false
+        u.bio = u.bio + '11'
+        expect(u.indexed_changed?).to eq true
+      end
+
+      it 'tagline changed work' do
+        expect(u.indexed_changed?).to eq false
+        u.tagline = u.tagline + '11'
+        expect(u.indexed_changed?).to eq true
+      end
+
+      it 'location changed work' do
+        expect(u.indexed_changed?).to eq false
+        u.location = u.location + '11'
+        expect(u.indexed_changed?).to eq true
+      end
+
+      it 'other changed work' do
+        expect(u.indexed_changed?).to eq false
+        u.website = '124124124'
+        u.github = '124u812'
+        u.avatar = '---'
+        u.sign_in_count = 190
+        u.last_sign_in_at = Time.now
+        u.replies_count = u.replies_count + 10
+        expect(u.indexed_changed?).to eq false
+      end
+    end
+  end
+
+  describe '#search' do
+    before do
+      @rei = create(:user, login: 'Rei', replies_count: 5)
+      @rain = create(:user, login: 'rain')
+      @huacnlee = create(:user, login: 'huacnlee')
+      @hugo = create(:user, login: 'Hugo', name: 'Rugo', replies_count: 2)
+      @hot = create(:user, login: 'hot')
+    end
+
+    it 'should work simple query' do
+      res = User.search('r')
+      expect(res[0].id).to eq @rei.id
+      expect(res[1].id).to eq @hugo.id
+      expect(res[2].id).to eq @rain.id
+
+      expect(User.search('r').size).to eq 3
+      expect(User.search('re').size).to eq 1
+      expect(User.search('h').size).to eq 3
+      expect(User.search('hu').size).to eq 2
+    end
+
+    it 'should work with :user option to include following users first' do
+      @rei.follow_user(@hugo)
+      res = User.search('r', user: @rei, limit: 2)
+      expect(res[0].id).to eq @hugo.id
+      expect(res[1].id).to eq @rei.id
+      expect(res.length).to eq 2
     end
   end
 end

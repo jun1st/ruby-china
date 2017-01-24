@@ -9,9 +9,11 @@
 #= require jquery.timeago.settings
 #= require jquery.hotkeys
 #= require jquery.autogrow-textarea
+#= require tooltipster.bundle.min
 #= require dropzone
 #= require jquery.fluidbox.min
 #= require social-share-button
+#= require social-share-button/wechat
 #= require jquery.atwho
 #= require emoji-data
 #= require emoji-modal
@@ -21,9 +23,12 @@
 #= require topics
 #= require pages
 #= require notes
+#= require editor
 #= require turbolinks
 #= require google_analytics
 #= require jquery.infinitescroll.min
+#= require d3.min
+#= require cal-heatmap.min
 #= require_self
 
 AppView = Backbone.View.extend
@@ -44,8 +49,10 @@ AppView = Backbone.View.extend
     FormStorage.restore()
     @initForDesktopView()
     @initComponents()
+    @initScrollEvent()
     @initInfiniteScroll()
     @initCable()
+    @restoreHeaderSearchBox()
 
     if $('body').data('controller-name') in ['topics', 'replies']
       window._topicView = new TopicView({parentView: @})
@@ -60,6 +67,7 @@ AppView = Backbone.View.extend
     $("abbr.timeago").timeago()
     $(".alert").alert()
     $('.dropdown-toggle').dropdown()
+    $('[data-toggle="tooltip"]').tooltip()
 
     # 绑定评论框 Ctrl+Enter 提交事件
     $(".cell_comments_new textarea").unbind "keydown"
@@ -70,6 +78,38 @@ AppView = Backbone.View.extend
 
     $(window).off "blur.inactive focus.inactive"
     $(window).on "blur.inactive focus.inactive", @updateWindowActiveState
+
+    # Likeable Popover
+    $('a.likeable[data-count!=0]').tooltipster
+      content: "Loading..."
+      theme: 'tooltipster-shadow'
+      side: 'bottom'
+      maxWidth: 230
+      interactive: true
+      contentAsHTML: true
+      triggerClose:
+        mouseleave: true
+      functionBefore: (instance, helper) ->
+        $target = $(helper.origin)
+        if $target.data('remote-loaded') is 1
+          return
+
+        likeable_type = $target.data("type")
+        likeable_id = $target.data("id")
+        data =
+          type: likeable_type
+          id: likeable_id
+        $.ajax
+          url: '/likes'
+          data: data
+          success: (html) ->
+            if html.length is 0
+              $target.data('remote-loaded', 1)
+              instance.hide()
+              instance.destroy()
+            else
+              instance.content(html)
+              $target.data('remote-loaded', 1)
 
   initForDesktopView : () ->
     return if App.mobile != false
@@ -101,7 +141,6 @@ AppView = Backbone.View.extend
       likes_count += 1
       $el.data('count', likes_count)
       @likeableAsLiked($el)
-      $("i.fa", $el).attr("class","fa fa-heart")
     else
       $.ajax
         url : "/likes/#{likeable_id}"
@@ -115,24 +154,19 @@ AppView = Backbone.View.extend
         $('span', $el).text("")
       else
         $('span', $el).text("#{likes_count} 个赞")
-      $("i.fa", $el).attr("class","fa fa-heart-o")
+    $el.data("remote-loaded", 0)
     false
 
   likeableAsLiked : (el) ->
     likes_count = el.data("count")
     el.data("state","active").attr("title", "取消赞").addClass("active")
     $('span',el).text("#{likes_count} 个赞")
-    $("i.fa",el).attr("class","fa fa-heart")
 
   initCable: () ->
     if !window.notificationChannel && App.isLogined()
       window.notificationChannel = App.cable.subscriptions.create "NotificationsChannel",
         connected: ->
-          setTimeout =>
-            @subscribe()
-            $(window).on 'unload', -> window.notificationChannel.unsubscribe()
-            $(document).on 'page:change', -> window.notificationChannel.subscribe()
-          , 1000
+          @subscribe()
 
         received: (data) =>
           @receivedNotificationCount(data)
@@ -140,11 +174,8 @@ AppView = Backbone.View.extend
         subscribe: ->
           @perform 'subscribed'
 
-        unsubscribe: ->
-          @perform 'unsubscribed'
-
   receivedNotificationCount : (json) ->
-    console.log 'receivedNotificationCount', json
+    # console.log 'receivedNotificationCount', json
     span = $(".notification-count span")
     link = $(".notification-count a")
     new_title = document.title.replace(/^\(\d+\) /,'')
@@ -159,6 +190,16 @@ AppView = Backbone.View.extend
       link.removeClass("new")
     span.text(json.count)
     document.title = new_title
+
+  restoreHeaderSearchBox: ->
+    $searchInput = $(".header .form-search input")
+
+    if location.pathname != "/search"
+      $searchInput.val("")
+    else
+      results = new RegExp('[\?&]q=([^&#]*)').exec(window.location.href)
+      q = results && decodeURIComponent(results[1])
+      $searchInput.val(q)
 
   openHeaderSearchBox: (e) ->
     $(".header .form-search").addClass("active")
@@ -255,6 +296,25 @@ AppView = Backbone.View.extend
         msgText: '<div style="text-align: center; padding: 5px;">载入中...</div>'
         img: 'data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=='
 
+  initScrollEvent: ->
+    $(window).off('scroll.navbar-fixed')
+    $(window).on('scroll.navbar-fixed', @toggleNavbarFixed)
+    @toggleNavbarFixed()
+
+  toggleNavbarFixed: (e) ->
+    top = $(window).scrollTop()
+    if top >= 50
+      $(".header .navbar").addClass('navbar-fixed-active')
+    else
+      $(".header .navbar").removeClass('navbar-fixed-active')
+
+    return if $(".navbar-topic-title").size() == 0
+    if top >= 50
+      $(".header .navbar").addClass('fixed-title')
+    else
+      $(".header .navbar").removeClass('fixed-title')
+
+
 window.App =
   turbolinks: false
   mobile: false
@@ -279,12 +339,12 @@ window.App =
   # 警告信息显示, to 显示在那个dom前(可以用 css selector)
   alert : (msg,to) ->
     $(".alert").remove()
-    $(to).before("<div class='alert alert-warning'><a class='close' href='#' data-dismiss='alert'>X</a>#{msg}</div>")
+    $(to).before("<div class='alert alert-warning'><a class='close' href='#' data-dismiss='alert'><i class='fa fa-close'></i></a>#{msg}</div>")
 
   # 成功信息显示, to 显示在那个dom前(可以用 css selector)
   notice : (msg,to) ->
     $(".alert").remove()
-    $(to).before("<div class='alert alert-success'><a class='close' data-dismiss='alert' href='#'>X</a>#{msg}</div>")
+    $(to).before("<div class='alert alert-success'><a class='close' data-dismiss='alert' href='#'><i class='fa fa-close'></i></a>#{msg}</div>")
 
   openUrl : (url) ->
     window.open(url)
@@ -296,15 +356,27 @@ window.App =
   # scan logins in jQuery collection and returns as a object,
   # which key is login, and value is the name.
   scanLogins: (query) ->
-    result = {}
+    result = []
+    logins = []
     for e in query
       $e = $(e)
-      result[$e.text()] = $e.attr('data-name')
-    result
+      login = $e.find(".user-name").text()
+      item =
+        login: login
+        name: $e.find(".user-name").attr('data-name')
+        avatar_url: $e.find(".avatar img").attr("src")
+      if logins.indexOf(login) != -1
+        continue
+
+      logins.push(login)
+      result.push(item)
+    _.uniq(result)
 
   atReplyable : (el, logins) ->
+    logins = [] if !logins
     $(el).atwho
       at : "@"
+      limit: 8
       searchKey: 'login'
       callbacks:
         filter: (query, data, searchKey) ->
@@ -312,12 +384,26 @@ window.App =
         sorter: (query, items, searchKey) ->
           return items
         remoteFilter: (query, callback) ->
+          r = new RegExp("^#{query}")
+          # 过滤出本地匹配的数据
+          localMatches = _.filter logins, (u) ->
+            return r.test(u.login) || r.test(u.name)
+          # Remote 匹配
           $.getJSON '/search/users.json', { q: query }, (data) ->
+            # 本地的排前面
+            for u in localMatches
+              data.unshift(u)
+            # 去重复
+            data = _.uniq data, false, (item) ->
+              return item.login;
+            # 限制数量
+            data = _.first(data, 8)
             callback(data)
       displayTpl : "<li data-value='${login}'><img src='${avatar_url}' height='20' width='20'/> ${login} <small>${name}</small></li>"
       insertTpl : "@${login}"
     .atwho
       at : ":"
+      limit: 8
       searchKey: 'code'
       data : window.EMOJI_LIST
       displayTpl : "<li data-value='${code}'><img src='#{App.twemoji_url}/svg/${url}.svg' class='twemoji' /> ${code} </li>"
@@ -327,5 +413,9 @@ window.App =
 
 document.addEventListener 'turbolinks:load',  ->
   window._appView = new AppView()
+
+document.addEventListener 'turbolinks:click', (event) ->
+  if event.target.getAttribute('href').charAt(0) is '#'
+    event.preventDefault()
 
 FormStorage.init()

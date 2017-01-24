@@ -3,35 +3,33 @@
 <!-- @suggest_topics maybe nil or ActiveRecord::Relation, but we need an array -->
 <% @suggest_topics = @suggest_topics.to_a %>
 
+<%= render "topics/node_info", node: @node %>
+
 <div class="row">
   <div class="col-md-9">
-    <div class="topics panel panel-default">
-      <div class="topic-list-heading panel-heading clearfix">
-        <%= render "topics/node_info", node: @node %>
-      </div>
+    <div class="topics topics-<%= action_name %> panel panel-default">
 
       <div class="panel-body item-list">
         <% if @suggest_topics.present? %>
-          <%= render partial: '/topics/topic', collection: @suggest_topics, locals: { suggest: true }, cached: -> (topic) { [topic, 'suggest'] } %>
+          <%= cache(['topics', 'suggest', @topics]) do %>
+            <%= render partial: '/topics/topic', collection: @suggest_topics, locals: { suggest: true } %>
+          <% end %>
         <% end %>
 
-        <%= render partial: '/topics/topic', collection: @topics, locals: { suggest: false }, cached: -> (topic) { [topic, 'normal'] } %>
+        <%= cache(['topics', 'normal', @topics]) do %>
+          <%= render partial: '/topics/topic', collection: @topics, locals: { suggest: false } %>
+        <% end %>
       </div>
 
       <div class="panel-footer clearfix">
         <%= will_paginate @topics %>
       </div>
-
     </div>
 
-    <% if controller_name == "topics" && action_name == "index" && !mobile? %>
-      <%= render "/shared/index_sections" %>
-      <%= render "/shared/hot_locations" %>
-    <% end %>
 
     <% if current_user %>
     <script type="text/javascript">
-      var readed_topic_ids = <%= current_user.filter_readed_topics(@topics + @suggest_topics) %>;
+      var readed_topic_ids = <%= @read_topic_ids || [] %>;
       for (var i = 0; i < readed_topic_ids.length; i++) {
         topic_id = readed_topic_ids[i];
         $(".topic-"+ topic_id).addClass('topic-visited');

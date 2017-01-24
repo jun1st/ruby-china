@@ -2,12 +2,13 @@
 
 <div class="search-results panel panel-default">
   <div class="panel-heading clearfix">
-    关于 “<%= params[:q] %>” 的搜索结果, 共 <%= @result.results.total %> 条
+    关于 “<%= params[:q] %>” 的搜索结果, 共 <%= @result.records.total %> 条
   </div>
 
   <div class="panel-body">
     <% @result.records.each_with_hit do |item, hit| %>
-      <%= render partial: item.class.name.downcase, locals: { item: item, hit: hit } %>
+      <% partial_view_name = item.class.name.downcase -%>
+      <%= render partial: (partial_view_name == 'team' ? 'user' : partial_view_name), locals: { item: item, hit: hit } %>
     <% end %>
   </div>
 

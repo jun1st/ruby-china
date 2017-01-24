@@ -1,5 +1,5 @@
 class Section < ApplicationRecord
-  acts_as_cached version: 1, expires_in: 1.week
+  second_level_cache expires_in: 1.month
 
   has_many :nodes, dependent: :destroy
 
@@ -16,6 +16,10 @@ class Section < ApplicationRecord
   end
 
   def sorted_nodes
-    nodes.where.not(id: Node.no_point_id).sorted
+    nodes.where.not(id: Node.no_point.id).sorted
+  end
+
+  def self.default
+    @default ||= Section.first || Section.create(name: '分享')
   end
 end

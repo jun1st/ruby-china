@@ -72,11 +72,6 @@ describe Topic, type: :model do
     expect(topic.last_active_mark).to eq(old_last_active_mark)
   end
 
-  it 'should covert body with Markdown on create' do
-    t = create(:topic, body: '*foo*')
-    expect(t.body_html).to eq('<p><em>foo</em></p>')
-  end
-
   it 'should get page and floor by reply' do
     replies = []
     5.times do
@@ -84,23 +79,6 @@ describe Topic, type: :model do
     end
     expect(topic.floor_of_reply(replies[2])).to eq(3)
     expect(topic.floor_of_reply(replies[3])).to eq(4)
-  end
-
-  it 'should covert body on save' do
-    t = create(:topic, body: '*foo*')
-    old_html = t.body_html
-    t.body = '*bar*'
-    t.save
-    expect(t.body_html).not_to eq(old_html)
-  end
-
-  it 'should not store body_html when it not changed' do
-    t = create(:topic, body: '*foo*')
-    t.body = '*fooaa*'
-    allow(t).to receive(:body_changed?).and_return(false)
-    old_html = t.body_html
-    t.save
-    expect(t.body_html).to eq(old_html)
   end
 
   it 'should log deleted user name when use destroy_by' do
@@ -252,10 +230,10 @@ describe Topic, type: :model do
     let!(:t) { create(:topic, user: user) }
 
     it 'should ban! and lock topic' do
-      expect(Topic).to receive(:notify_topic_node_changed).with(t.id, Node.no_point_id)
+      expect(Topic).to receive(:notify_topic_node_changed).with(t.id, Node.no_point.id)
       t.ban!
       t.reload
-      expect(t.node_id).to eq Node.no_point_id
+      expect(t.node_id).to eq Node.no_point.id
       expect(t.lock_node).to eq true
     end
   end
@@ -295,6 +273,33 @@ describe Topic, type: :model do
         t.unexcellent!
       end.to change(Reply.where(action: 'unexcellent', user: user), :count).by(1)
       expect(t.excellent).to eq 0
+    end
+  end
+
+  describe 'Search methods' do
+    let(:t) { create :topic }
+    describe '.indexed_changed?' do
+      it 'title changed work' do
+        expect(t.indexed_changed?).to eq false
+        t.title = t.title + '1'
+        expect(t.indexed_changed?).to eq true
+      end
+
+      it 'body changed work' do
+        expect(t.indexed_changed?).to eq false
+        t.body = t.body + '1'
+        expect(t.indexed_changed?).to eq true
+      end
+
+      it 'other changed work' do
+        expect(t.indexed_changed?).to eq false
+        t.node_id = 3
+        t.last_reply_id = 3
+        t.who_deleted = '122'
+        t.last_active_mark = Time.now.to_i
+        t.suggested_at = Time.now
+        expect(t.indexed_changed?).to eq false
+      end
     end
   end
 end

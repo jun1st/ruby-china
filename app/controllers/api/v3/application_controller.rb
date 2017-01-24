@@ -1,6 +1,18 @@
 module Api
   module V3
+    # @abstract
     class ApplicationController < ActionController::API
+      include ActionController::Caching
+      include ActionView::Helpers::OutputSafetyHelper
+      include ApplicationHelper
+
+      helper_method :can?, :current_user, :current_ability, :meta
+      helper_method :admin?, :owner?, :markdown, :raw
+
+      # 参数值不在允许的范围内
+      # HTTP Status 400
+      #
+      #     { error: 'ParameterInvalid', message: '原因' }
       class ParameterValueNotAllowed < ActionController::ParameterMissing
         attr_reader :values
         def initialize(param, values) # :nodoc:
@@ -10,7 +22,16 @@ module Api
         end
       end
 
+      # 无权限返回信息
+      # HTTP Status 403
+      #
+      #     { error: 'AccessDenied', message: '原因' }
       class AccessDenied < StandardError; end
+
+      # 数据不存在
+      # HTTP Status 404
+      #
+      #     { error: 'ResourceNotFound', message: '原因' }
       class PageNotFound < StandardError; end
 
       rescue_from(ActionController::ParameterMissing) do |err|
@@ -32,20 +53,18 @@ module Api
       end
 
       def optional!(name, opts = {})
-        if params[name].blank? && opts[:require] == true
+        if opts[:require] && !params.has_key?(name)
           raise ActionController::ParameterMissing.new(name)
         end
 
-        if opts[:values] && params[name].present?
+        if opts[:values] && params.has_key?(name)
           values = opts[:values].to_a
           if !values.include?(params[name]) && !values.include?(params[name].to_i)
             raise ParameterValueNotAllowed.new(name, opts[:values])
           end
         end
 
-        if params[name].blank? && opts[:default].present?
-          params[name] = opts[:default]
-        end
+        params[name] ||= opts[:default]
       end
 
       def error!(data, status_code = 400)
@@ -68,9 +87,8 @@ module Api
         current_ability.can?(*args)
       end
 
-      def admin?
-        return false if current_user.blank?
-        current_user.admin?
+      def meta
+        @meta || {}
       end
     end
   end

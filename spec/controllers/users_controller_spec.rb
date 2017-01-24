@@ -2,7 +2,7 @@ require 'rails_helper'
 
 describe UsersController, type: :controller do
   let(:user) { create :user, location: 'Shanghai' }
-  let(:deleted_user) { create :user, state: User::STATE[:deleted] }
+  let(:deleted_user) { create :user, state: User.states[:deleted] }
 
   describe 'Visit deleted user' do
     it 'should 404 with deleted user' do
@@ -58,6 +58,83 @@ describe UsersController, type: :controller do
   describe ':notes' do
     it 'should show user notes' do
       get :notes, params: { id: user.login }
+      expect(response).to be_success
+    end
+  end
+
+  describe ':auto_unbind' do
+    it 'should word' do
+      sign_in user
+      delete :auth_unbind, params: { id: user.login, provider: 'github' }
+      expect(response).to redirect_to(edit_user_registration_path)
+    end
+
+    it 'have no provider' do
+      user.bind_service('provider' => 'github', 'uid' => 'ruby-china')
+      user.bind_service('provider' => 'twitter', 'uid' => 'ruby-china')
+      sign_in user
+      delete :auth_unbind, params: { id: user.login, provider: 'github' }
+      expect(response).to redirect_to(edit_user_registration_path)
+    end
+  end
+
+  describe ':block' do
+    it 'should work' do
+      sign_in user
+      get :block, params: { id: user.login }
+      expect(response).to be_success
+    end
+  end
+
+  describe ':unblock' do
+    it 'should work' do
+      sign_in user
+      get :unblock, params: { id: user.login }
+      expect(response).to be_success
+    end
+  end
+
+  describe ':blocked' do
+    it 'should work' do
+      sign_in user
+      get :blocked, params: { id: user.login }
+      expect(response).to be_success
+    end
+
+    it 'render 404 for wrong user' do
+      user2 = create(:user)
+      sign_in user
+      get :blocked, params: { id: user2.login }
+      expect(response.status).to eq 404
+    end
+  end
+
+  describe ':follow' do
+    it 'should work' do
+      sign_in user
+      get :follow, params: { id: user.login }
+      expect(response).to be_success
+    end
+  end
+
+  describe ':unfollow' do
+    it 'should work' do
+      sign_in user
+      get :unfollow, params: { id: user.login }
+      expect(response).to be_success
+    end
+  end
+
+  describe ':followers' do
+    it 'should work' do
+      get :followers, params: { id: user.login }
+      expect(response).to be_success
+    end
+  end
+
+  describe ':following' do
+    it 'should work' do
+      get :following, params: { id: user.login }
       expect(response).to be_success
     end
   end

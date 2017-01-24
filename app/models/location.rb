@@ -1,11 +1,11 @@
 class Location < ApplicationRecord
-  acts_as_cached version: 1, expires_in: 1.week
+  second_level_cache expires_in: 1.month
 
   has_many :users
 
   scope :hot, -> { order(users_count: :desc) }
 
-  validates :name, uniqueness: { case_sensitive: false }
+  validates :name, presence: true, uniqueness: { case_sensitive: false }
 
   before_save { |loc| loc.name = loc.name.downcase.strip }
 

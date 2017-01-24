@@ -1,12 +1,10 @@
-# 单页的文档页面
-# 采用 Markdown 编写
-require 'redcarpet'
 class Page < ApplicationRecord
-  include BaseModel
   include MarkdownBody
   include Searchable
 
-  acts_as_cached version: 1, expires_in: 1.week
+  counter :hits, default: 0
+
+  second_level_cache expires_in: 1.month
 
   has_many :versions, class_name: 'PageVersion'
 
@@ -43,6 +41,14 @@ class Page < ApplicationRecord
                          title: title,
                          slug: slug)
     end
+  end
+
+  def as_indexed_json(_options = {})
+    as_json(only: [:slug, :title, :body])
+  end
+
+  def indexed_changed?
+    slug_changed? || title_changed? || body_changed?
   end
 
   def to_param

@@ -6,7 +6,7 @@ require 'rails/all'
 # you've limited to :test, :development, or :production.
 Bundler.require(*Rails.groups)
 
-module RubyChina
+module Homeland
   class Application < Rails::Application
     # Settings in config/environments/* take precedence over those specified here.
     # Application configuration should go into files in config/initializers
@@ -33,8 +33,13 @@ module RubyChina
     # Do not swallow errors in after_commit/after_rollback callbacks.
     config.i18n.fallbacks = true
 
-    config.autoload_paths.push(*%W(#{config.root}/lib))
-    config.eager_load_paths.push(*%W(#{config.root}/lib/exception_notifier))
+    config.autoload_paths += [
+      Rails.root.join('lib')
+    ]
+    config.eager_load_paths += [
+      Rails.root.join('lib/homeland'),
+      Rails.root.join('lib/exception_notifier')
+    ]
 
     config.generators do |g|
       g.test_framework :rspec
@@ -55,21 +60,17 @@ module RubyChina
       :action_cable, -> (request) { request.uuid }
     ]
 
-    config.cache_store = [:mem_cache_store, '127.0.0.1', { namespace: 'rb-1', compress: true }]
+    memcached_config = Application.config_for(:memcached)
+    config.cache_store = [:mem_cache_store, memcached_config['host'], memcached_config]
 
     config.active_job.queue_adapter = :sidekiq
-
     config.middleware.use Rack::Attack
-
     config.action_cable.mount_path = '/cable'
   end
 end
 
-require 'markdown'
-
-$memory_store = ActiveSupport::Cache::MemoryStore.new
-$file_store = ActiveSupport::Cache::FileStore.new(Rails.root.join('tmp/cache'))
+require 'homeland'
 
 I18n.config.enforce_available_locales = false
 
-ActiveModelSerializers.config.adapter = :json
+# ActiveModelSerializers.config.adapter = :json

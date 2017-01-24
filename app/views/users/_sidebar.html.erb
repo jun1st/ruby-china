@@ -36,8 +36,10 @@
               <%= link_to(raw('<i class="fa fa-globe"></i>'), @user.website_url, target: '_blank', rel: 'nofollow') %>
             <% end %>
 
-            <% if !@user.github.blank? %>
-              <%= link_to(raw('<i class="fa fa-github"></i>'), @user.github_url, target: '_blank', rel: 'nofollow') %>
+            <% if Setting.has_module? :github %>
+              <% if !@user.github.blank? %>
+                <%= link_to(raw('<i class="fa fa-github"></i>'), @user.github_url, target: '_blank', rel: 'nofollow') %>
+              <% end %>
             <% end %>
 
             <% if !@user.email.blank? && @user.email_public %>
@@ -62,11 +64,11 @@
       </div>
       <% if !owner? @user %>
       <div class="buttons row">
-        <div class="col-sm-6">
+        <div class="col-xs-6">
           <%= follow_user_tag(@user) %>
         </div>
 
-        <div class="col-sm-6">
+        <div class="col-xs-6">
           <%= block_user_tag(@user) %>
         </div>
       </div>
@@ -80,14 +82,16 @@
     </div>
   </div>
 
-  <% if !@user.teams.blank? %>
-  <div class="panel user-teams">
-    <div class="panel-body">
-      <% @user.teams.each do |team| %>
-        <%= user_avatar_tag(team, :md) %>
-      <% end %>
+  <% if Setting.has_module?(:team) %>
+    <% if !@user.teams.blank? %>
+    <div class="panel user-teams">
+      <div class="panel-body">
+        <% @user.teams.each do |team| %>
+          <%= user_avatar_tag(team, :md) %>
+        <% end %>
+      </div>
     </div>
-  </div>
+    <% end %>
   <% end %>
 
   <%= render '/users/repos', user: @user %>

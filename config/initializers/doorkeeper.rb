@@ -6,12 +6,16 @@ Doorkeeper.configure do
 
   # This block will be called to check whether the resource owner is authenticated or not.
   resource_owner_authenticator do
-    current_user || warden.authenticate!(scope: :user)
+    current_user || redirect_to(new_user_session_url)
   end
 
-  resource_owner_from_credentials do |_routes|
-    u = User.find_by_login_or_email(params[:username])
-    u if u && u.valid_password?(params[:password])
+  resource_owner_from_credentials do
+    request.params[:user] = { login: request.params[:username], password: request.params[:password] }
+    request.env["devise.allow_params_authentication"] = true
+    # 清理之前的 warden 信息
+    request.env["warden"].logout(:user)
+    resource = request.env["warden"].authenticate(scope: :user)
+    resource
   end
 
   # If you want to restrict access to the web interface for adding oauth authorized applications, you need to declare the block below.
@@ -26,12 +30,19 @@ Doorkeeper.configure do
 
   # Access token expiration time (default 2 hours).
   # If you want to disable expiration, set this to nil.
-  access_token_expires_in 24.hours
+  access_token_expires_in 1.days
 
   # Assign a custom TTL for implicit grants.
-  # custom_access_token_expires_in do |oauth_client|
-  #   oauth_client.application.additional_settings.implicit_oauth_expiration
-  # end
+  custom_access_token_expires_in do |client|
+    application = client.is_a?(Doorkeeper::Application) ? client : client&.application
+    case application&.level
+    when 1 then 7.days
+    when 2 then 14.days
+    when 3 then 30.days
+    else
+      1.days
+    end
+  end
 
   # Use a custom class for generating the access token.
   # https://github.com/doorkeeper-gem/doorkeeper#custom-access-token-generator
@@ -79,7 +90,7 @@ Doorkeeper.configure do
   # by default in non-development environments). OAuth2 delegates security in
   # communication to the HTTPS protocol so it is wise to keep this enabled.
   #
-  force_ssl_in_redirect_uri Rails.env.production?
+  force_ssl_in_redirect_uri false
 
   # Specify what grant flows are enabled in array of Strings. The valid
   # strings and the flows they enable are:

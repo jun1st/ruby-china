@@ -1,6 +1,8 @@
 require 'auto-space'
 
 CORRECT_CHARS = [
+  ['［', '['],
+  ['］', ']'],
   ['【', '['],
   ['】', ']'],
   ['（', '('],
@@ -8,10 +10,8 @@ CORRECT_CHARS = [
 ]
 
 class Topic < ApplicationRecord
-  include Redis::Objects
-  include BaseModel
-  include Likeable
   include MarkdownBody
+  include Likeable
   include SoftDelete
   include Mentionable
   include Closeable
@@ -45,7 +45,6 @@ class Topic < ApplicationRecord
   scope :popular,            -> { where('likes_count > 5') }
   scope :excellent,          -> { where('excellent >= 1') }
   scope :without_hide_nodes, -> { exclude_column_ids('node_id', Topic.topic_index_hide_node_ids) }
-  scope :without_body,       -> { select(column_names - ['body']) }
   scope :without_node_ids,   -> (ids) { exclude_column_ids('node_id', ids) }
   scope :exclude_column_ids, lambda { |column, ids|
     if ids.empty?
@@ -66,15 +65,17 @@ class Topic < ApplicationRecord
   mapping do
     indexes :title, term_vector: :yes
     indexes :body, term_vector: :yes
-    indexes :node_name
   end
 
   def as_indexed_json(_options = {})
     {
       title: self.title,
-      body: self.full_body,
-      node_name: self.node_name
+      body: self.full_body
     }
+  end
+
+  def indexed_changed?
+    title_changed? || body_changed?
   end
 
   def related_topics(size = 5)
@@ -99,7 +100,7 @@ class Topic < ApplicationRecord
   end
 
   def self.fields_for_list
-    columns = %w(body body_html who_deleted follower_ids)
+    columns = %w(body who_deleted follower_ids)
     select(column_names - columns.map(&:to_s))
   end
 
@@ -125,7 +126,7 @@ class Topic < ApplicationRecord
   end
   before_save do
     if admin_editing == true && self.node_id_changed?
-      self.class.notify_topic_node_changed(id, node_id)
+      Topic.notify_topic_node_changed(id, node_id)
     end
   end
 
@@ -204,7 +205,7 @@ class Topic < ApplicationRecord
   end
 
   def ban!
-    update_attributes(lock_node: true, node_id: Node.no_point_id, admin_editing: true)
+    update_attributes(lock_node: true, node_id: Node.no_point.id, admin_editing: true)
   end
 
   def excellent!

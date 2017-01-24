@@ -1,11 +1,14 @@
 class TeamsController < ApplicationController
+  require_module_enabled! :team
   load_resource find_by: :login
   load_and_authorize_resource
 
   before_action :set_team, only: [:show, :edit, :update, :destroy]
 
   def index
-    render_404
+    @total_team_count = Team.count
+    @active_teams = Team.fields_for_list.hot.limit(100)
+    fresh_when([@total_team_count, @active_teams])
   end
 
   def show
@@ -44,6 +47,6 @@ class TeamsController < ApplicationController
   end
 
   def set_team
-    @team = Team.find_login!(params[:id])
+    @team = Team.find_by_login!(params[:id])
   end
 end

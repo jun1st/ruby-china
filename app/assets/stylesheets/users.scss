@@ -60,10 +60,11 @@
         font-size:14px;
       }
       i.icon { margin-bottom: -1px; }
+      i.fa-diamond { color: $red; }
       .info { margin-top:3px; font-size:12px; color:#bbb; }
       .node {
         margin-right:5px;
-        a { color:#444; }
+        color: #777; margin-right: 3px;
       }
     }
   }
@@ -139,6 +140,7 @@
 table.node-topics {
   td {
     a { color:#333; font-weight:normal; }
+    i.fa-diamond { color: $red; }
   }
   td.replied-at { width:80px; }
 }
@@ -226,6 +228,20 @@ table.node-topics {
   }
 }
 
+.user-profile-fields {
+  margin-top: 20px;
+  border-top: 1px solid #eee;
+  padding-top: 20px;
+
+  .field {
+    padding: 2px 0;
+    label { color: #666; display: inline-block; width: 100px; margin-right: 10px; }
+    .value {
+      a { text-decoration: underline; }
+    }
+  }
+}
+
 #user_github_repos {
   .more { text-align:right; }
   ul { margin:0; }
@@ -243,4 +259,8 @@ table.node-topics {
   overflow-x: scroll;
   text-align: center;
   svg { margin: 0 auto; }
+}
+
+.avatar-preview {
+  .media-object { display: inline-block; }
 }

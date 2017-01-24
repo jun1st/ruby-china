@@ -9,30 +9,35 @@
         <%= render "shared/error_messages", target: resource if params[:by].blank? %>
         <%= f.input :name %>
         <%= f.input :avatar %>
+        <div class="form-group avatar-preview">
+          <%= user_avatar_tag(@user, :lg, link: false) %>
+          <%= user_avatar_tag(@user, :md, link: false) %>
+          <%= user_avatar_tag(@user, :sm, link: false) %>
+          <%= user_avatar_tag(@user, :xs, link: false) %>
+        </div>
+        <script type="text/javascript">
+        // Use HTTP Request Headers "Pragma: no-cache" for force update image cache.
+        // https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.32
+        _.each($('img.media-object'), function(img) {
+          if (!/avatar\-/.test($(img).attr("class"))) {
+            return;
+          }
+          var url = $(img).attr("src");
+/*          console.log(url);*/
+          $.ajax({
+            url: url,
+            headers: { 'Pragma': 'no-cache', 'Cache-Control': 'no-cache' },
+            success: function (res) { $(img).attr('src', url); }
+          });
+        });
+        </script>
         <%= f.input :email, input_html: { class: "span4", disabled: (resource.email_locked?) } %>
         <div class="form-group">
           <div class="checkbox">
             <label for="user_email_public" class="checkbox"><%= f.check_box :email_public %> <%= t("users.email_permission")%></label>
           </div>
         </div>
-        <%= f.input :location  %>
-        <%= f.input :company %>
-        <div class="form-group">
-          <%= f.label :github, class: 'control-label' %>
-          <div class="input-group">
-            <span class="input-group-addon">https://github.com/</span>
-            <%= f.text_field :github, class: "form-control", placeholder: I18n.t('simple_form.placeholders.user.yourname') %>
-          </div>
-        </div>
-        <div class="form-group">
-          <%= f.label :twitter, class: 'control-label' %>
-          <div class="input-group">
-            <span class="input-group-addon">http://twitter.com/</span>
-            <%= f.text_field :twitter, class: "form-control", placeholder: I18n.t('simple_form.placeholders.user.yourname') %>
-          </div>
-        </div>
-        <%= f.input :website, type: :url, input_html: { placeholder: "http://" } %>
-        <%= f.input :tagline %>
+        <%= render partial: 'profile_fields', locals: { f: f } %>
         <%= f.input :bio, as: :text, input_html: { class: "xxlarge", rows: "6" } %>
         <div class="form-group hide-ios">
           <button type="submit" class="btn btn-primary" data-disable-with="<%= t("common.saving") %>"><%= t("users.update_profile")%></button>
@@ -40,6 +45,8 @@
         <% end %>
       </div>
     </div>
+
+    <% if !Setting.sso_enabled? %>
     <div class="panel panel-default hide-ios">
       <div class="panel-heading"><%= t("users.edit_password")%></div>
       <div class="panel-body">
@@ -53,30 +60,37 @@
           <%= f.submit t("users.update_password"), class: "btn btn-success", 'data-disable-with' => t("common.saving") %>
         </div>
         <% end %>
+
+        <% if Setting.has_module? :github %>
+        <p>
+          <a href="https://ruby-china.org/topics/31323" target="_blank">GitHub 登录的方式如何修改密码？</a>
+        </p>
+        <% end %>
       </div>
     </div>
+    <% end %>
+
   </div>
   <div class="sidebar col-md-3 hide-ios">
-    <div class="panel panel-default" style="text-align:center;">
-      <div class="panel-body">
-        <%= user_avatar_tag(@user, :lg, link: false, timestamp: true) %>
-      </div>
-    </div>
-    <div class="panel panel-default">
-      <div class="panel-heading"><%= t("users.bind_another_account")%></div>
-      <ul class="list-group">
-        <% ["github"].each do |provider| %>
-        <li class="list-group-item">
-          <% if @user.bind? provider %>
-          <%= t("omniauth.#{provider}") %>
-          <%= link_to(raw('<i class="fa fa-remove"></i>'),"/account/auth/#{provider}/unbind", rel: "twitsy", title: "点击解除绑定", method: 'delete' )%>
-          <% else %>
-          <%= link_to(t("omniauth.#{provider}"), "/account/auth/#{provider}", rel: "twitsy", title: "点击绑定" )%>
+    <% if !Setting.sso_enabled? %>
+      <% if Setting.has_module? :github %>
+      <div class="panel panel-default">
+        <div class="panel-heading"><%= t("users.bind_another_account")%></div>
+        <ul class="list-group">
+          <% ["github"].each do |provider| %>
+          <li class="list-group-item">
+            <% if @user.bind? provider %>
+            <%= t("omniauth.#{provider}") %>
+            <%= link_to(raw('<i class="fa fa-remove"></i>'),"/account/auth/#{provider}/unbind", rel: "twitsy", title: "点击解除绑定", method: 'delete' )%>
+            <% else %>
+            <%= link_to(t("omniauth.#{provider}"), "/account/auth/#{provider}", rel: "twitsy", title: "点击绑定" )%>
+            <% end %>
+          </li>
           <% end %>
-        </li>
-        <% end %>
-      </ul>
-    </div>
+        </ul>
+      </div>
+      <% end %>
+    <% end %>
 
     <div class="panel panel-default">
       <ul class="list-group">

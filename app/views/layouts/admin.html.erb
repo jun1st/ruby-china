@@ -22,22 +22,21 @@
         <nav class="navbar-collapse bs-navbar-collapse collapse">
           <%= render_list class: "nav navbar-nav" do |li|
             li << link_to(t("admin.menu.root_path"), admin_root_path)
-            li << link_to(t("admin.menu.site_configs"), admin_site_configs_path )
             li << link_to(t("admin.menu.users"),admin_users_path)
             li << link_to(t("admin.menu.sections"), admin_sections_path )
             li << link_to(t("admin.menu.nodes"), admin_nodes_path )
-            li << link_to(t("admin.menu.wiki"),admin_pages_path )
+            li << link_to(t("admin.menu.wiki"),admin_pages_path ) if Setting.has_module?(:wiki)
             li << link_to(t("admin.menu.topics"), admin_topics_path)
             li << link_to(t("admin.menu.replies"), admin_replies_path)
             li << link_to(t("admin.menu.comments"),admin_comments_path )
             li << link_to(t("admin.menu.photos"),admin_photos_path )
-            li << link_to(t("admin.menu.site_nodes"),admin_site_nodes_path )
-            li << link_to(t("admin.menu.sites"),admin_sites_path )
+            li << link_to(t("admin.menu.site_nodes"),admin_site_nodes_path ) if Setting.has_module?(:site)
+            li << link_to(t("admin.menu.sites"),admin_sites_path ) if Setting.has_module?(:site)
             li << link_to(t("admin.menu.locations"),admin_locations_path )
             li << link_to(t("admin.menu.exception_logs"),admin_exception_logs_path )
           end  %>
 
-          <%= render "common/user_nav" %>
+          <%= render "shared/usernav" %>
         </div>
       </div>
     </div>
@@ -46,7 +45,7 @@
 
   <div class="main-container container">
     <div class="breadcrumb">
-      <a href="<%= admin_root_path %>">Root</a> &gt;
+      <a href="<%= admin_root_path %>">控制台</a> <i class="fa fa-angle-right"></i>
       <%= yield :sitemap %>
     </div>
     <div id="main" class="panel panel-default">

@@ -1,6 +1,6 @@
 <%= render 'node_selector', node: @topic.node %>
 
-<%= simple_form_for @topic, html: { class: "form", tb: 'edit-topic' } do |f| %>
+<%= simple_form_for @topic, remote: true, html: { class: "form", tb: 'edit-topic' } do |f| %>
   <%= render "shared/error_messages", target: @topic %>
   <%= f.hidden_field :node_id %>
 
@@ -14,16 +14,18 @@
     </div>
   </div>
 
-  <%= render "editor_toolbar" %>
+  <%= render "/shared/editor_toolbar" %>
 
   <div class="form-group">
     <%= f.text_area :body, class: "topic-editor form-control closewarning", rows: 20 %>
   </div>
 
-  <% if current_user.team_collection.any? %>
-  <div class='form-group'>
-    <%= f.input :team_id, collection: current_user.team_collection, include_blank: '不要关联组织' %>
-  </div>
+  <% if Setting.has_module?(:team) %>
+    <% if current_user.team_collection.any? %>
+    <div class='form-group'>
+      <%= f.input :team_id, collection: current_user.team_collection, include_blank: '不要关联组织' %>
+    </div>
+    <% end %>
   <% end %>
 
   <div class="form-group hide-ios">

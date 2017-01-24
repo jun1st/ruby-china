@@ -12,6 +12,10 @@
       <% elsif current_user %>
         $("#replies .reply a.edit[data-uid='<%= current_user.id %>']").css('display','inline-block');
       <% end %>
+
+      <% if @topic.closed? %>
+        $("#replies .reply .hideable").remove();
+      <% end %>
     })
   </script>
 <% end %>
@@ -20,17 +24,6 @@
   <div class="col-md-9">
     <div class="topic-detail panel panel-default">
       <%= render partial: "topics/topic_info", locals: { topic: @topic } %>
-
-      <div class="panel-body markdown">
-        <%= raw Setting.before_topic_html %>
-
-        <article>
-          <%= raw @topic.body_html %>
-        </article>
-
-
-        <%= raw Setting.after_topic_html %>
-      </div>
 
       <% if @topic.excellent? %>
         <div class="label-awesome">
@@ -42,6 +35,17 @@
           <% end %>
         </div>
       <% end %>
+
+      <div class="panel-body markdown">
+        <%= raw Setting.before_topic_html %>
+
+        <article>
+          <%= @topic.body_html %>
+        </article>
+
+
+        <%= raw Setting.after_topic_html %>
+      </div>
 
       <div class="panel-footer clearfix">
         <%= render "buttons" %>
@@ -98,6 +102,11 @@
 <% if !mobile? %>
   <div class="sidebar hidden-mobile col-md-3">
     <%= render 'topic_sidebar' %>
+  </div>
+<% else %>
+  <div class="move-page-buttons">
+    <a href="#" class="btn btn-block btn-sm btn-move-page" data-type="top"><i class="fa fa-arrow-up"></i></a>
+    <a href="#" class="btn btn-block btn-sm btn-move-page" data-type="bottom"><i class="fa fa-arrow-down"></i></a>
   </div>
 <% end %>
 </div>

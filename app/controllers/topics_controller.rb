@@ -3,8 +3,7 @@ class TopicsController < ApplicationController
                                      :favorite, :unfavorite, :follow, :unfollow,
                                      :action, :favorites]
   load_and_authorize_resource only: [:new, :edit, :create, :update, :destroy,
-                                     :favorite, :unfavorite, :follow, :unfollow,
-                                     :action]
+                                     :favorite, :unfavorite, :follow, :unfollow]
 
   before_action :set_topic, only: [:ban, :edit, :update, :destroy, :follow,
                                    :unfollow, :action]
@@ -25,11 +24,15 @@ class TopicsController < ApplicationController
     @topics = @topics.fields_for_list
     @topics = @topics.paginate(page: params[:page], per_page: 22, total_entries: 1500).to_a
     @page_title = t('menu.topics')
-    fresh_when([@suggest_topics, @topics])
+    @read_topic_ids = []
+    if current_user
+      @read_topic_ids = current_user.filter_readed_topics(@topics + @suggest_topics)
+    end
+    fresh_when([@suggest_topics, @topics, @read_topic_ids])
   end
 
   def feed
-    @topics = Topic.without_hide_nodes.recent.without_body.limit(20).includes(:node, :user, :last_reply_user)
+    @topics = Topic.without_hide_nodes.recent.limit(20).includes(:node, :user, :last_reply_user)
     render layout: false if stale?(@topics)
   end
 
@@ -37,7 +40,7 @@ class TopicsController < ApplicationController
     @node = Node.find(params[:id])
     @topics = @node.topics.last_actived.fields_for_list
     @topics = @topics.includes(:user).paginate(page: params[:page], per_page: 25)
-    title = @node.jobs? ? @node.name : "#{@node.name} &raquo; #{t('menu.topics')}"
+    title = @node.id == Node.job.id ? @node.name : "#{@node.name} &raquo; #{t('menu.topics')}"
     @page_title = [@node.name, t('menu.topics')].join(' · ')
     if stale?(etag: [@node, @topics], template: 'topics/index')
       render action: 'index'
@@ -46,7 +49,7 @@ class TopicsController < ApplicationController
 
   def node_feed
     @node = Node.find(params[:id])
-    @topics = @node.topics.recent.without_body.limit(20)
+    @topics = @node.topics.recent.limit(20)
     render layout: false if stale?([@node, @topics])
   end
 
@@ -88,13 +91,14 @@ class TopicsController < ApplicationController
     @topic.hits.incr(1)
     @node = @topic.node
     @show_raw = params[:raw] == '1'
+    @can_reply = can? :create, Reply
 
-    @replies = Reply.unscoped.where(topic_id: @topic.id).without_body.order(:id).all
+    @replies = Reply.unscoped.where(topic_id: @topic.id).order(:id).all
 
     check_current_user_liked_replies
     check_current_user_status_for_topic
     set_special_node_active_menu
-    fresh_when([@topic, @node, @show_raw, @replies, @has_followed, @has_favorited])
+    fresh_when([@topic, @node, @show_raw, @replies, @has_followed, @has_favorited, @can_reply])
   end
 
   def new
@@ -115,12 +119,7 @@ class TopicsController < ApplicationController
     @topic.user_id = current_user.id
     @topic.node_id = params[:node] || topic_params[:node_id]
     @topic.team_id = ability_team_id
-
-    if @topic.save
-      redirect_to(topic_path(@topic.id), notice: t('topics.create_topic_success'))
-    else
-      render action: 'new'
-    end
+    @topic.save
   end
 
   def preview
@@ -146,12 +145,7 @@ class TopicsController < ApplicationController
     @topic.team_id = ability_team_id
     @topic.title = topic_params[:title]
     @topic.body = topic_params[:body]
-
-    if @topic.save
-      redirect_to(topic_path(@topic.id), notice: t('topics.update_topic_success'))
-    else
-      render action: 'edit'
-    end
+    @topic.save
   end
 
   def destroy
@@ -180,6 +174,8 @@ class TopicsController < ApplicationController
   end
 
   def action
+    authorize! params[:type].to_sym, @topic
+
     case params[:type]
     when 'excellent'
       @topic.excellent!
@@ -240,7 +236,7 @@ class TopicsController < ApplicationController
 
   def set_special_node_active_menu
     case @node.try(:id)
-    when Node.jobs_id
+    when Node.job.id
       @current = ['/jobs']
     end
   end

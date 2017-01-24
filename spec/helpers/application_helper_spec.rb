@@ -1,8 +1,64 @@
 require 'rails_helper'
 
 describe ApplicationHelper, type: :helper do
-  it 'sanitize_markdown' do
-    expect(helper.sanitize_markdown('<a href="javascript:alert()">link</a>')).to eq('<a>link</a>')
+  describe '.sanitize_markdown' do
+    describe '<a href>' do
+      it 'should block javascript' do
+        expect(helper.sanitize_markdown('<a href="javascript:alert()">link</a>')).to eq('<a>link</a>')
+      end
+    end
+
+    describe '<script>' do
+      it 'should block script' do
+        expect(helper.sanitize_markdown('<script>alert('');</script>')).to eq('alert();')
+      end
+    end
+
+    describe '<style>' do
+      it 'should block style' do
+        expect(helper.sanitize_markdown('<style>.body{}</style>')).to eq('.body{}')
+      end
+    end
+
+    describe '<iframe>' do
+      it 'should block iframe' do
+        expect(helper.sanitize_markdown('<iframe src="https://foobar.com"></iframe>')).to eq('')
+      end
+
+      it 'should allow youtube iframe' do
+        html = '<span class="embed-responsive embed-responsive-16by9">
+        <iframe width="560" height="315" src="https://www.youtube.com/embed/gFQpxAKx_ds" class="embed" frameborder="0" allowfullscreen=""></iframe>
+        </span>'
+        expect(helper.sanitize_markdown(html)).to eq(html)
+      end
+    end
+
+    describe 'img' do
+      it 'should work' do
+        html = '<img src="/img/a.jpg" class="emoji" width="100" height="100">'
+        expect(helper.sanitize_markdown(html)).to eq(html)
+      end
+    end
+
+    describe 'a' do
+      it 'should work' do
+        html = '<a href="http://www.google.com" data-floor="100" target="_blank" rel="nofollow" class="btn btn-lg">111</a>'
+        expect(helper.sanitize_markdown(html)).to eq(html)
+      end
+    end
+  end
+
+
+  describe 'markdown' do
+    context 'bad html' do
+      it 'filter script' do
+        expect(helper.markdown('<script>alert()</script> foo')).to eq('<p>alert() foo</p>')
+      end
+
+      it 'filter style' do
+        expect(helper.markdown('<style>.body {}</style> foo')).to eq('<p>.body {} foo</p>')
+      end
+    end
   end
 
   it 'formats the flash messages' do
@@ -10,19 +66,19 @@ describe ApplicationHelper, type: :helper do
     expect(helper.notice_message.html_safe?).to eq(true)
 
     controller.flash[:notice] = 'hello'
-    expect(helper.notice_message).to eq('<div class="alert alert-success"><a class="close" data-dismiss="alert" href="#">x</a>hello</div>')
+    expect(helper.notice_message).to eq('<div class="alert alert-success"><a class="close" data-dismiss="alert" href="#"><i class="fa fa-close"></i></a>hello</div>')
     controller.flash[:notice] = nil
 
     controller.flash[:warning] = 'hello'
-    expect(helper.notice_message).to eq('<div class="alert alert-warning"><a class="close" data-dismiss="alert" href="#">x</a>hello</div>')
+    expect(helper.notice_message).to eq('<div class="alert alert-warning"><a class="close" data-dismiss="alert" href="#"><i class="fa fa-close"></i></a>hello</div>')
     controller.flash[:warning] = nil
 
     controller.flash[:alert] = 'hello'
-    expect(helper.notice_message).to eq('<div class="alert alert-danger"><a class="close" data-dismiss="alert" href="#">x</a>hello</div>')
+    expect(helper.notice_message).to eq('<div class="alert alert-danger"><a class="close" data-dismiss="alert" href="#"><i class="fa fa-close"></i></a>hello</div>')
     controller.flash[:alert] = nil
 
     controller.flash[:error] = 'hello'
-    expect(helper.notice_message).to eq('<div class="alert alert-error"><a class="close" data-dismiss="alert" href="#">x</a>hello</div>')
+    expect(helper.notice_message).to eq('<div class="alert alert-error"><a class="close" data-dismiss="alert" href="#"><i class="fa fa-close"></i></a>hello</div>')
     controller.flash[:error] = nil
   end
 
@@ -100,7 +156,8 @@ describe ApplicationHelper, type: :helper do
   describe 'timeago' do
     it 'should work' do
       t = Time.now
-      expect(helper.timeago(t, class: 'foo')).to eq "<abbr class=\"foo timeago\" title=\"#{t.iso8601}\"></abbr>"
+      text = l t.to_date, format: :long
+      expect(helper.timeago(t, class: 'foo')).to eq "<abbr class=\"foo timeago\" title=\"#{t.iso8601}\">#{text}</abbr>"
     end
   end
 
