@@ -342,4 +342,5 @@ ActiveRecord::Schema.define(version: 20160710111853) do
     t.index ["location"], name: "index_users_on_location", using: :btree
     t.index ["login"], name: "index_users_on_login", using: :btree
   end
+
 end

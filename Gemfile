@@ -4,7 +4,7 @@ else
   source 'https://gems.ruby-china.org'
 end
 
-gem 'rails', '~> 5.0.0'
+gem 'rails', '~> 5.0.1'
 gem 'sprockets'
 gem 'sass-rails'
 gem 'coffee-rails'
@@ -108,7 +108,6 @@ gem 'puma'
 gem 'rack-cors', require: 'rack/cors'
 gem 'rack-utf8_sanitizer'
 
-gem 'oneapm_rpm'
 gem 'exception_notification'
 gem 'status-page'
 
