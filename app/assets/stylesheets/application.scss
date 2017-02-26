@@ -331,6 +331,12 @@ textarea.form-control:focus { padding: 6px; border-bottom-width: 1px; }
   .nav-pills>li.active>a:link,
   .nav-pills>li.active>a:visited,
   .nav-pills>li.active>a:hover { background-color: #d0d0d0; color: #666; }
+
+  .reply-to {
+    padding-top: 3px;
+    padding-left: 8px;
+    .close { font-size: 14px; margin-left: 5px; margin-top: 3px; }
+  }
 }
 textarea.topic-editor {
   border-radius: 0px 3px 3px 3px;
@@ -438,7 +444,7 @@ form {
     &:hover { color: #ddd; background: transparent; }
   }
 }
-abbr[title] { border-bottom: 0px; cursor: text; }
+abbr[title] { border-bottom: 0px; cursor: pointer; }
 
 kbd {
   background-color: #f5f5f5; color: #999; border-radius: 2px; border-color: #fafafa;
@@ -477,21 +483,35 @@ kbd {
 }
 
 .nav-stacked { margin-bottom: 15px; }
-.nav-stacked.nav-pills>li>a {
-  text-align: right;
-  border-radius: 3px 0 0 3px;
-  box-shadow: 0 0px 1px rgba(0, 0, 0, 0.09);
-  padding: 5px 15px;
-  margin-bottom: 0px;
-  background: #fff; border-right:2px solid $blackLight; color: #666;
+.nav-stacked.nav-pills>li {
+  &:first-child {
+    a { border-radius: 3px 3px 0 0 };
+  }
+  &:last-child {
+    a { border-radius: 0 0 3px 3px };
+  }
 }
-.nav-stacked.nav-pills>li>a:hover { border-color: $blueLight; color: $blueLight; background-color: #fff; }
+.nav-stacked.nav-pills>li>a {
+  text-align: left;
+  font-size: 14px;
+  border-radius: 0px;
+  box-shadow: 0 1px 0px rgba(0, 0, 0, 0.09);
+  padding: 8px 20px;
+  margin-bottom: 0px;
+  margin: 0;
+  background: #fff;
+  color: #666;
+
+  i.fa {
+    width: 20px;
+  }
+}
+.nav-stacked.nav-pills>li>a:hover { color: #555; background-color: #f9f9f9; }
 .nav-stacked.nav-pills>li.active>a,
 .nav-stacked.nav-pills>li.active>a:focus,
 .nav-stacked.nav-pills>li.active>a:hover {
   color: $blue;
-  background-color: #FFF;
-  border-color: $blueLight;
+  background-color: #fff;
 }
 
 /* Modal */
@@ -600,6 +620,8 @@ img.emoji { width:20px; height:20px; }
     color: #e76f3c;
   }
 }
+
+.setting-menu { padding-right: 0;}
 
 @media (max-width: 480px) {
   body { padding-top: 50px; }

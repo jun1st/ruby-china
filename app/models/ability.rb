@@ -52,15 +52,15 @@ class Ability
 
   def roles_for_replies
     # 新手用户晚上禁止回帖，防 spam，可在面板设置是否打开
-    can :create, Reply if !current_lock_reply?
+    can :create, Reply unless current_lock_reply?
     can [:update, :destroy], Reply, user_id: user.id
     cannot [:create, :update, :destroy], Reply, topic: { closed?: true }
   end
 
   def current_lock_reply?
-    return false if !user.newbie?
+    return false unless user.newbie?
     return false if Setting.reject_newbie_reply_in_the_evening != 'true'
-    return Time.zone.now.hour > 22 || Time.zone.now.hour < 9
+    Time.zone.now.hour > 22 || Time.zone.now.hour < 9
   end
 
   def roles_for_notes
@@ -113,7 +113,7 @@ class Ability
 
   def basic_read_only
     can [:read, :feed, :node], Topic
-    can :read, Reply
+    can [:read, :reply_to], Reply
     can [:read, :recent, :preview, :comments], Page
     can :preview, Note
     can :read, Photo

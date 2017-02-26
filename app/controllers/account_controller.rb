@@ -7,15 +7,7 @@ class AccountController < Devise::RegistrationsController
   end
 
   def edit
-    @user = current_user
-  end
-
-  def update
-    super
-
-    if params[:user][:profiles]
-      current_user.update_profile_fields(params[:user][:profiles])
-    end
+    redirect_to setting_path
   end
 
   # POST /resource
@@ -25,20 +17,6 @@ class AccountController < Devise::RegistrationsController
     resource.email = params[resource_name][:email]
     if verify_rucaptcha?(resource) && resource.save
       sign_in(resource_name, resource)
-    end
-  end
-
-  def destroy
-    current_password = params[:user][:current_password]
-
-    if current_user.valid_password?(current_password)
-      resource.soft_delete
-      sign_out
-      redirect_to root_path
-      set_flash_message :notice, :destroyed
-    else
-      current_user.errors.add(:current_password, :invalid)
-      render 'edit'
     end
   end
 

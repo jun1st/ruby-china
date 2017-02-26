@@ -1,7 +1,7 @@
 class TopicsController < ApplicationController
   before_action :authenticate_user!, only: [:new, :edit, :create, :update, :destroy,
-                                     :favorite, :unfavorite, :follow, :unfollow,
-                                     :action, :favorites]
+                                            :favorite, :unfavorite, :follow, :unfollow,
+                                            :action, :favorites]
   load_and_authorize_resource only: [:new, :edit, :create, :update, :destroy,
                                      :favorite, :unfavorite, :follow, :unfollow]
 
@@ -16,13 +16,13 @@ class TopicsController < ApplicationController
     @topics = Topic.last_actived.without_suggest
     @topics =
       if current_user
-        @topics.without_nodes(current_user.blocked_node_ids)
-          .without_users(current_user.blocked_user_ids)
+        @topics.without_nodes(current_user.block_node_ids)
+               .without_users(current_user.block_user_ids)
       else
         @topics.without_hide_nodes
       end
     @topics = @topics.fields_for_list
-    @topics = @topics.paginate(page: params[:page], per_page: 22, total_entries: 1500).to_a
+    @topics = @topics.page(params[:page])
     @page_title = t('menu.topics')
     @read_topic_ids = []
     if current_user
@@ -39,8 +39,8 @@ class TopicsController < ApplicationController
   def node
     @node = Node.find(params[:id])
     @topics = @node.topics.last_actived.fields_for_list
-    @topics = @topics.includes(:user).paginate(page: params[:page], per_page: 25)
-    title = @node.id == Node.job.id ? @node.name : "#{@node.name} &raquo; #{t('menu.topics')}"
+    @topics = @topics.includes(:user).page(params[:page])
+    @page_title = @node.id == Node.job.id ? @node.name : "#{@node.name} &raquo; #{t('menu.topics')}"
     @page_title = [@node.name, t('menu.topics')].join(' · ')
     if stale?(etag: [@node, @topics], template: 'topics/index')
       render action: 'index'
@@ -56,29 +56,30 @@ class TopicsController < ApplicationController
   %w(no_reply popular).each do |name|
     define_method(name) do
       @topics = Topic.without_hide_nodes.send(name.to_sym).last_actived.fields_for_list.includes(:user)
-      @topics = @topics.paginate(page: params[:page], per_page: 25, total_entries: 1500)
+      @topics = @topics.page(params[:page])
 
       @page_title = [t("topics.topic_list.#{name}"), t('menu.topics')].join(' · ')
       render action: 'index' if stale?(etag: @topics, template: 'topics/index')
     end
   end
 
+  # GET /topics/favorites
   def favorites
-    # @topic_ids = current_user.favorite_topic_ids.reverse.paginate(page: params[:page], per_page: 40)
-    @topics = Topic.where(id: current_user.favorite_topic_ids).fields_for_list.recent.paginate(page: params[:page], per_page: 40)
+    @topics = Topic.where(id: current_user.favorite_topic_ids).fields_for_list
+    @topics = @topics.recent.page(params[:page])
     render action: 'index' if stale?(etag: @topics, template: 'topics/index')
   end
 
   def recent
     @topics = Topic.without_hide_nodes.recent.fields_for_list.includes(:user)
-    @topics = @topics.paginate(page: params[:page], per_page: 25, total_entries: 1500)
+    @topics = @topics.page(params[:page])
     @page_title = [t('topics.topic_list.recent'), t('menu.topics')].join(' · ')
     render action: 'index' if stale?(etag: @topics, template: 'topics/index')
   end
 
   def excellent
     @topics = Topic.excellent.recent.fields_for_list.includes(:user)
-    @topics = @topics.paginate(page: params[:page], per_page: 25, total_entries: 1500)
+    @topics = @topics.page(params[:page])
 
     @page_title = [t('topics.topic_list.excellent'), t('menu.topics')].join(' · ')
     render action: 'index' if stale?(etag: @topics, template: 'topics/index')
@@ -94,11 +95,11 @@ class TopicsController < ApplicationController
     @can_reply = can? :create, Reply
 
     @replies = Reply.unscoped.where(topic_id: @topic.id).order(:id).all
+    @user_like_reply_ids = current_user&.like_reply_ids_by_replies(@replies) || []
 
-    check_current_user_liked_replies
     check_current_user_status_for_topic
     set_special_node_active_menu
-    fresh_when([@topic, @node, @show_raw, @replies, @has_followed, @has_favorited, @can_reply])
+    fresh_when([@topic, @node, @show_raw, @replies, @user_like_reply_ids, @has_followed, @has_favorited, @can_reply])
   end
 
   def new
@@ -164,12 +165,12 @@ class TopicsController < ApplicationController
   end
 
   def follow
-    @topic.push_follower(current_user.id)
+    current_user.follow_topic(@topic)
     render plain: '1'
   end
 
   def unfollow
-    @topic.pull_follower(current_user.id)
+    current_user.unfollow_topic(@topic)
     render plain: '1'
   end
 
@@ -212,26 +213,14 @@ class TopicsController < ApplicationController
     team.id
   end
 
-  def check_current_user_liked_replies
-    return false unless current_user
-
-    # 找出用户 like 过的 Reply，给 JS 处理 like 功能的状态
-    @user_liked_reply_ids = []
-    @replies.each do |r|
-      unless r.liked_user_ids.index(current_user.id).nil?
-        @user_liked_reply_ids << r.id
-      end
-    end
-  end
-
   def check_current_user_status_for_topic
     return false unless current_user
     # 通知处理
     current_user.read_topic(@topic, replies_ids: @replies.collect(&:id))
     # 是否关注过
-    @has_followed = @topic.followed?(current_user.id)
+    @has_followed = current_user.follow_topic?(@topic)
     # 是否收藏
-    @has_favorited = current_user.favorited_topic?(@topic.id)
+    @has_favorited = current_user.favorite_topic?(@topic)
   end
 
   def set_special_node_active_menu

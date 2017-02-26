@@ -2,7 +2,6 @@ require 'digest/md5'
 class Reply < ApplicationRecord
   include MarkdownBody
   include SoftDelete
-  include Likeable
   include Mentionable
   include MentionTopic
 
@@ -11,6 +10,7 @@ class Reply < ApplicationRecord
   belongs_to :user, counter_cache: true
   belongs_to :topic, touch: true
   belongs_to :target, polymorphic: true
+  belongs_to :reply_to, class_name: 'Reply'
 
   delegate :title, to: :topic, prefix: true, allow_nil: true
   delegate :login, to: :user, prefix: true, allow_nil: true
@@ -28,6 +28,10 @@ class Reply < ApplicationRecord
 
     if topic&.closed?
       errors.add(:topic, '已关闭，不再接受回帖或修改回帖。')
+    end
+
+    if reply_to_id
+      self.reply_to_id = nil if reply_to&.topic_id != self.topic_id
     end
   end
 
@@ -98,9 +102,9 @@ class Reply < ApplicationRecord
   def notification_receiver_ids
     return @notification_receiver_ids if defined? @notification_receiver_ids
     # 加入帖子关注着
-    follower_ids = self.topic.try(:follower_ids) || []
+    follower_ids = self.topic.try(:follow_by_user_ids) || []
     # 加入回帖人的关注者
-    follower_ids = follower_ids + (self.user.try(:follower_ids) || [])
+    follower_ids += self.user.try(:follow_by_user_ids) || []
     # 加入发帖人
     follower_ids << self.topic.try(:user_id)
     # 去重复
@@ -108,7 +112,7 @@ class Reply < ApplicationRecord
     # 排除回帖人
     follower_ids.delete(self.user_id)
     # 排除同一个回复过程中已经提醒过的人
-    follower_ids = follower_ids - self.mentioned_user_ids
+    follower_ids -= self.mentioned_user_ids
     @notification_receiver_ids = follower_ids
   end
 

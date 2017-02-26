@@ -54,8 +54,11 @@ gem 'devise-encryptable'
 gem 'notifications'
 gem 'ruby-push-notifications'
 
+# 赞、关注、收藏、屏蔽等功能的数据结构
+gem 'action-store'
+
 # 分页
-gem 'will_paginate'
+gem 'kaminari'
 
 # 搜索
 gem 'elasticsearch-model'
@@ -89,8 +92,6 @@ gem 'auto-space'
 
 # 队列
 gem 'sidekiq'
-# Sidekiq Web
-gem 'sinatra', '~> 2.0.0.beta2'
 
 # 分享功能
 gem 'social-share-button'
@@ -112,7 +113,7 @@ gem 'puma'
 gem 'rack-cors', require: 'rack/cors'
 gem 'rack-utf8_sanitizer'
 
-gem 'exception_notification'
+gem 'exception-track'
 gem 'status-page'
 
 gem 'bundler-audit', require: false
@@ -137,5 +138,4 @@ group :development, :test do
   gem 'yard'
 
   gem 'codecov', require: false
-  gem 'pry-byebug'
 end

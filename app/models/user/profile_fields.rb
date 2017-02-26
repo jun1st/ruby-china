@@ -5,7 +5,7 @@ class User
     included do
       include RailsSettings::Extend
 
-      PROFILE_FILEDS = %i(alipay paypal qq weibo wechat douban dingding aliwangwang
+      PROFILE_FIELDS = %i(alipay paypal qq weibo wechat douban dingding aliwangwang
                           facebook instagram dribbble battle_tag psn_id steam_id)
 
       PROFILE_FIELD_PREFIXS = {
@@ -14,21 +14,21 @@ class User
         facebook: 'https://facebook.com/',
         instagram: 'https://instagram.com/',
         dribbble: 'https://dribbble.com/',
-        battle_tag: '#',
+        battle_tag: '#'
       }
     end
 
     def profile_fields
       return @profile_fields if defined? @profile_fields
       @profile_fields = self.settings.profile_fields || {}
-      if not @profile_fields.is_a?(Hash)
+      unless @profile_fields.is_a?(Hash)
         @profile_fields = {}
       end
       @profile_fields
     end
 
     def profile_field(field)
-      return nil if !PROFILE_FILEDS.include?(field.to_sym)
+      return nil unless PROFILE_FIELDS.include?(field.to_sym)
       profile_fields[field.to_sym]
     end
 
@@ -41,7 +41,7 @@ class User
 
     def update_profile_fields(field_values)
       field_values.each do |key, value|
-        next if !PROFILE_FILEDS.include?(key.to_sym)
+        next unless PROFILE_FIELDS.include?(key.to_sym)
         profile_fields[key.to_sym] = value
       end
       self.settings.profile_fields = profile_fields

@@ -10,11 +10,23 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20161230094832) do
+ActiveRecord::Schema.define(version: 20170224074052) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
-  enable_extension "pg_stat_statements"
+
+  create_table "actions", force: :cascade do |t|
+    t.string   "action_type",   null: false
+    t.string   "action_option"
+    t.string   "target_type"
+    t.integer  "target_id"
+    t.string   "user_type"
+    t.integer  "user_id"
+    t.datetime "created_at",    null: false
+    t.datetime "updated_at",    null: false
+    t.index ["target_type", "target_id", "action_type"], name: "index_actions_on_target_type_and_target_id_and_action_type", using: :btree
+    t.index ["user_type", "user_id", "action_type"], name: "index_actions_on_user_type_and_user_id_and_action_type", using: :btree
+  end
 
   create_table "authorizations", force: :cascade do |t|
     t.string   "provider",                null: false
@@ -48,11 +60,11 @@ ActiveRecord::Schema.define(version: 20161230094832) do
     t.index ["user_id"], name: "index_devices_on_user_id", using: :btree
   end
 
-  create_table "exception_logs", force: :cascade do |t|
-    t.string   "title",      null: false
-    t.text     "body",       null: false
-    t.datetime "created_at"
-    t.datetime "updated_at"
+  create_table "exception_tracks", force: :cascade do |t|
+    t.string   "title"
+    t.text     "body"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
   create_table "locations", force: :cascade do |t|
@@ -186,7 +198,6 @@ ActiveRecord::Schema.define(version: 20161230094832) do
     t.integer  "topic_id",                        null: false
     t.text     "body",                            null: false
     t.integer  "state",              default: 1,  null: false
-    t.integer  "liked_user_ids",     default: [],              array: true
     t.integer  "likes_count",        default: 0
     t.integer  "mentioned_user_ids", default: [],              array: true
     t.datetime "deleted_at"
@@ -195,6 +206,7 @@ ActiveRecord::Schema.define(version: 20161230094832) do
     t.string   "action"
     t.string   "target_type"
     t.string   "target_id"
+    t.integer  "reply_to_id"
     t.index ["deleted_at"], name: "index_replies_on_deleted_at", using: :btree
     t.index ["topic_id"], name: "index_replies_on_topic_id", using: :btree
     t.index ["user_id"], name: "index_replies_on_user_id", using: :btree
@@ -268,8 +280,6 @@ ActiveRecord::Schema.define(version: 20161230094832) do
     t.datetime "replied_at"
     t.integer  "replies_count",         default: 0,     null: false
     t.integer  "likes_count",           default: 0
-    t.integer  "follower_ids",          default: [],                 array: true
-    t.integer  "liked_user_ids",        default: [],                 array: true
     t.integer  "mentioned_user_ids",    default: [],                 array: true
     t.datetime "deleted_at"
     t.datetime "created_at"
@@ -312,13 +322,11 @@ ActiveRecord::Schema.define(version: 20161230094832) do
     t.string   "company"
     t.string   "github"
     t.string   "twitter"
-    t.string   "qq"
     t.string   "avatar"
     t.boolean  "verified",                           default: false, null: false
     t.boolean  "hr",                                 default: false, null: false
     t.integer  "state",                              default: 1,     null: false
     t.string   "tagline"
-    t.string   "co"
     t.datetime "created_at"
     t.datetime "updated_at"
     t.string   "encrypted_password",                 default: "",    null: false
@@ -336,16 +344,14 @@ ActiveRecord::Schema.define(version: 20161230094832) do
     t.string   "perishable_token",                   default: "",    null: false
     t.integer  "topics_count",                       default: 0,     null: false
     t.integer  "replies_count",                      default: 0,     null: false
-    t.integer  "favorite_topic_ids",                 default: [],                 array: true
-    t.integer  "blocked_node_ids",                   default: [],                 array: true
-    t.integer  "blocked_user_ids",                   default: [],                 array: true
-    t.integer  "following_ids",                      default: [],                 array: true
     t.integer  "follower_ids",                       default: [],                 array: true
     t.string   "type",                   limit: 20
     t.integer  "failed_attempts",                    default: 0,     null: false
     t.string   "unlock_token"
     t.datetime "locked_at"
     t.integer  "team_users_count"
+    t.integer  "followers_count",                    default: 0
+    t.integer  "following_count",                    default: 0
     t.index "lower((login)::text) varchar_pattern_ops", name: "index_users_on_lower_login_varchar_pattern_ops", using: :btree
     t.index "lower((name)::text) varchar_pattern_ops", name: "index_users_on_lower_name_varchar_pattern_ops", using: :btree
     t.index ["email"], name: "index_users_on_email", using: :btree

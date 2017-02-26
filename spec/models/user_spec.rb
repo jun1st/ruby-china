@@ -297,25 +297,23 @@ describe User, type: :model do
     it 'should favorite a topic' do
       user.favorite_topic(topic.id)
       expect(user.favorite_topic_ids.include?(topic.id)).to eq(true)
-
       expect(user.favorite_topic(nil)).to eq(false)
-      expect(user.favorite_topic(topic.id.to_s)).to eq(false)
+      expect(user.favorite_topic(topic.id)).to eq(true)
       expect(user.favorite_topic_ids.include?(topic.id)).to eq(true)
-      expect(user.favorited_topic?(topic.id)).to eq(true)
+      expect(user.favorite_topic?(topic.id)).to eq(true)
     end
 
     it 'should unfavorite a topic' do
       user.unfavorite_topic(topic.id)
       expect(user.favorite_topic_ids.include?(topic.id)).to eq(false)
       expect(user.unfavorite_topic(nil)).to eq(false)
-      expect(user.unfavorite_topic(topic.id.to_s)).to eq(true)
-      expect(user.favorited_topic?(topic.id)).to eq(false)
+      expect(user.unfavorite_topic(topic)).to eq(true)
+      expect(user.favorite_topic?(topic)).to eq(false)
     end
   end
 
   describe 'Like' do
     let(:topic) { create :topic }
-    let(:reply) { create :reply }
     let(:user)  { create :user }
     let(:user2) { create :user }
 
@@ -324,41 +322,58 @@ describe User, type: :model do
         user.like(topic)
         topic.reload
         expect(topic.likes_count).to eq(1)
-        expect(topic.liked_user_ids).to include(user.id)
+        expect(topic.like_by_user_ids).to include(user.id)
 
         user2.like(topic)
         topic.reload
         expect(topic.likes_count).to eq(2)
-        expect(topic.liked_user_ids).to include(user2.id)
+        expect(topic.like_by_user_ids).to include(user2.id)
         expect(user.liked?(topic)).to eq(true)
 
         user2.unlike(topic)
         topic.reload
         expect(topic.likes_count).to eq(1)
-        expect(topic.liked_user_ids).not_to include(user2.id)
+        expect(topic.like_by_user_ids).not_to include(user2.id)
 
         # can't like itself
         topic.user.like(topic)
         topic.reload
         expect(topic.likes_count).to eq(1)
-        expect(topic.liked_user_ids).not_to include(topic.user_id)
+        expect(topic.like_by_user_ids).not_to include(topic.user_id)
 
         # can't unlike itself
         topic.user.unlike(topic)
         topic.reload
         expect(topic.likes_count).to eq(1)
-        expect(topic.liked_user_ids).not_to include(topic.user_id)
-
-        expect do
-          user.like(reply)
-        end.to change(reply, :likes_count).by(1)
+        expect(topic.like_by_user_ids).not_to include(topic.user_id)
       end
 
       it 'can tell whether or not liked by a user' do
-        expect(topic.liked_by_user?(user)).to be_falsey
+        expect(user.like_topic?(topic)).to be_falsey
         user.like(topic)
-        expect(topic.liked_by_user?(user)).to be_truthy
-        expect(topic.liked_users).to include(user)
+        topic.reload
+        expect(user.like_topic?(topic)).to be_truthy
+        expect(topic.like_by_users).to include(user)
+      end
+    end
+
+    describe 'like reply' do
+      let(:reply) { create :reply }
+
+      it 'should work' do
+        user.like(reply)
+        expect(user.like_reply?(reply)).to be_truthy
+      end
+
+      describe '.like_reply_ids_by_replies' do
+        let(:replies) { create_list(:reply, 3) }
+        it 'should work' do
+          user.like(replies[0])
+          user.like(replies[2])
+          like_ids = user.like_reply_ids_by_replies(replies)
+          expect(like_ids).not_to include(replies[1].id)
+          expect(like_ids).to include(replies[0].id, replies[2].id)
+        end
       end
     end
   end
@@ -418,33 +433,17 @@ describe User, type: :model do
     end
   end
 
-  describe '.block_node' do
-    let(:user) { create :user }
-
-    it 'should work' do
-      user.block_node(1)
-      expect(user.blocked_node_ids).to eq [1]
-      user.block_node(1)
-      expect(user.blocked_node_ids).to eq [1]
-      user.block_node(2)
-      expect(user.blocked_node_ids).to eq [1, 2]
-      user.unblock_node(2)
-      expect(user.blocked_node_ids).to eq [1]
-    end
-  end
-
   describe '.block_user' do
     let(:user) { create :user }
+    let(:u2) { create :user }
+    let(:u3) { create :user }
 
     it 'should work' do
-      user.block_user(1)
-      expect(user.blocked_user_ids).to eq [1]
-      user.block_user(1)
-      expect(user.blocked_user_ids).to eq [1]
-      user.block_user(2)
-      expect(user.blocked_user_ids).to eq [1, 2]
-      user.unblock_user(2)
-      expect(user.blocked_user_ids).to eq [1]
+      user.block_user(u2)
+      user.block_user(u3)
+      expect(user.block_user_ids).to include(u2.id, u3.id)
+      expect(u2.block_by_user_ids).to include(user.id)
+      expect(u3.block_by_user_ids).to include(user.id)
     end
   end
 
@@ -456,29 +455,24 @@ describe User, type: :model do
     it 'should work' do
       u1.follow_user(u2)
       u1.follow_user(u3)
-      expect(u1.following_ids).to eq [u2.id, u3.id]
-      expect(u2.follower_ids).to eq [u1.id]
-      expect(u3.follower_ids).to eq [u1.id]
-      # followed?
-      expect(u1.followed?(u2)).to eq true
-      expect(u1.followed?(u2.id)).to eq true
-      expect(u2.followed?(u1)).to eq false
-      # Follow again will not duplicate
-      u1.follow_user(u2)
-      expect(u1.following_ids).to eq [u2.id, u3.id]
-      expect(u2.follower_ids).to eq [u1.id]
+      expect(u1.follow_user_ids).to include(u2.id, u3.id)
+      expect(u2.follow_by_user_ids).to eq [u1.id]
+      expect(u3.follow_by_user_ids).to eq [u1.id]
 
       # Unfollow
       u1.unfollow_user(u3)
-      expect(u1.following_ids).to eq [u2.id]
-      expect(u3.follower_ids).to eq []
+      expect(u1.follow_user_ids).to eq [u2.id]
+      u3.reload
+      expect(u3.follow_by_user_ids).to eq []
     end
   end
 
   describe '.favorites_count' do
-    let(:u1) { create :user, favorite_topic_ids: [1, 2] }
+    let(:u1) { create :user }
 
     it 'should work' do
+      u1.favorite_topic(1)
+      u1.favorite_topic(2)
       expect(u1.favorites_count).to eq(2)
     end
   end
@@ -567,7 +561,7 @@ describe User, type: :model do
 
     context 'deleted user' do
       it "should nil" do
-        user.update_attributes(state: -1)
+        user.update(state: -1)
         expect(User.find_for_database_authentication(login: 'foo')).to eq nil
       end
     end

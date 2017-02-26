@@ -364,12 +364,16 @@ describe 'API V3', 'topics', type: :request do
       it 'should work' do
         login_user!
         t = create(:topic, title: 'i want to know')
+        r0 = create(:reply)
         r1 = create(:reply, topic_id: t.id, body: 'let me tell', user: current_user)
         r2 = create(:reply, topic_id: t.id, body: 'let me tell again', deleted_at: Time.now)
+        r3 = create(:reply, topic_id: t.id, body: 'let me tell again again')
+        current_user.like(r0)
         current_user.like(r2)
+        current_user.like(r3)
         get "/api/v3/topics/#{t.id}/replies.json"
         expect(response.status).to eq(200)
-        expect(json['replies'].size).to eq 2
+        expect(json['replies'].size).to eq 3
         expect(json['replies'][0]).to include(*%w(id user body_html created_at updated_at deleted))
         expect(json['replies'][0]['user']).to include(*%w(id name login avatar_url))
         expect(json['replies'][0]['id']).to eq r1.id
@@ -380,7 +384,8 @@ describe 'API V3', 'topics', type: :request do
         expect(json['replies'][1]['deleted']).to eq true
         expect(json['replies'][1]['abilities']['update']).to eq false
         expect(json['replies'][1]['abilities']['destroy']).to eq false
-        expect(json['meta']['user_liked_reply_ids']).to eq([r2.id])
+        expect(json['meta']['user_liked_reply_ids']).not_to include(r0.id)
+        expect(json['meta']['user_liked_reply_ids']).to include(r2.id, r3.id)
       end
     end
 
@@ -425,7 +430,7 @@ describe 'API V3', 'topics', type: :request do
       t = create(:topic, title: 'new topic 2')
       post "/api/v3/topics/#{t.id}/follow.json"
       expect(response.status).to eq(200)
-      expect(t.reload.follower_ids).to include(current_user.id)
+      expect(t.reload.follow_by_user_ids).to include(current_user.id)
     end
   end
 
@@ -435,7 +440,7 @@ describe 'API V3', 'topics', type: :request do
       t = create(:topic, title: 'new topic 2')
       post "/api/v3/topics/#{t.id}/unfollow.json"
       expect(response.status).to eq(200)
-      expect(t.reload.follower_ids).not_to include(current_user.id)
+      expect(t.reload.follow_by_user_ids).not_to include(current_user.id)
     end
   end
 

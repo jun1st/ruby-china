@@ -8,7 +8,7 @@ module Admin
       if params[:q].present?
         @sites = @sites.where('name LIKE ?', "%#{params[:q]}%")
       end
-      @sites = @sites.paginate(page: params[:page], per_page: 20)
+      @sites = @sites.page(params[:page])
     end
 
     def show
@@ -32,7 +32,7 @@ module Admin
     end
 
     def update
-      if @site.update_attributes(params[:site].permit!)
+      if @site.update(params[:site].permit!)
         redirect_to(admin_sites_path, notice: 'Site 更新成功。')
       else
         render action: 'edit'

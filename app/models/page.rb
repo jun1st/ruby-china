@@ -4,7 +4,7 @@ class Page < ApplicationRecord
 
   counter :hits, default: 0
 
-  second_level_cache expires_in: 1.month
+  second_level_cache expires_in: 2.weeks
 
   has_many :versions, class_name: 'PageVersion'
 
@@ -59,9 +59,9 @@ class Page < ApplicationRecord
   def revert_version(version)
     page_version = PageVersion.where(page_id: id, version: version).first
     return false if page_version.blank?
-    update_attributes(body: page_version.body,
-                      title: page_version.title,
-                      slug: page_version.slug)
+    update(body: page_version.body,
+           title: page_version.title,
+           slug: page_version.slug)
   end
 
   def editors

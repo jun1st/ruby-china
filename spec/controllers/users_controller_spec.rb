@@ -27,6 +27,12 @@ describe UsersController, type: :controller do
       get :show, params: { id: user.login }
       expect(response).to be_success
     end
+
+    it 'should show team user' do
+      team = create(:team)
+      get :show, params: { id: team.login }
+      expect(response).to be_success
+    end
   end
 
   describe ':topics' do
@@ -59,22 +65,6 @@ describe UsersController, type: :controller do
     it 'should show user notes' do
       get :notes, params: { id: user.login }
       expect(response).to be_success
-    end
-  end
-
-  describe ':auto_unbind' do
-    it 'should word' do
-      sign_in user
-      delete :auth_unbind, params: { id: user.login, provider: 'github' }
-      expect(response).to redirect_to(edit_user_registration_path)
-    end
-
-    it 'have no provider' do
-      user.bind_service('provider' => 'github', 'uid' => 'ruby-china')
-      user.bind_service('provider' => 'twitter', 'uid' => 'ruby-china')
-      sign_in user
-      delete :auth_unbind, params: { id: user.login, provider: 'github' }
-      expect(response).to redirect_to(edit_user_registration_path)
     end
   end
 
@@ -156,6 +146,15 @@ describe UsersController, type: :controller do
     it 'should work' do
       get :calendar, params: { id: user.login }
       expect(response.status).to eq(200)
+    end
+  end
+
+  describe '.reward' do
+    it 'should not allow user close' do
+      user.update_reward_fields(alipay: 'XXXXXXX')
+      get :reward, params: { id: user.login }, xhr: true
+      expect(response).to be_success
+      expect(response.body).to include('XXXXXXX')
     end
   end
 end

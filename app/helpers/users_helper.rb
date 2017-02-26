@@ -22,7 +22,7 @@ module UsersHelper
 
     link_to(login, main_app.user_path(user), options)
   end
-  alias_method :team_name_tag, :user_name_tag
+  alias team_name_tag user_name_tag
 
   def user_avatar_width_for_size(size)
     case size
@@ -61,7 +61,7 @@ module UsersHelper
       raw img
     end
   end
-  alias_method :team_avatar_tag, :user_avatar_tag
+  alias team_avatar_tag user_avatar_tag
 
   def render_user_level_tag(user)
     return '' if user.blank?
@@ -80,7 +80,7 @@ module UsersHelper
   def block_node_tag(node)
     return '' if current_user.blank?
     return '' if node.blank?
-    blocked = current_user.blocked_node_ids.include?(node.id)
+    blocked = current_user.block_node?(node)
     class_names = 'btn btn-default btn-sm button-block-node'
     icon = '<i class="fa fa-eye-slash"></i>'
     if blocked
@@ -94,7 +94,7 @@ module UsersHelper
     return '' if current_user.blank?
     return '' if user.blank?
     return '' if current_user.id == user.id
-    blocked = current_user.blocked_user_ids.include?(user.id)
+    blocked = current_user.block_user?(user)
     class_names = 'button-block-user btn btn-default btn-block'
     icon = '<i class="fa fa-eye-slash"></i>'
     if blocked
@@ -108,7 +108,7 @@ module UsersHelper
     return '' if current_user.blank?
     return '' if user.blank?
     return '' if current_user.id == user.id
-    followed = current_user.followed?(user)
+    followed = current_user.follow_user_ids.include?(user.id)
     opts[:class] ||= 'btn btn-primary btn-block'
     class_names = "button-follow-user #{opts[:class]}"
     icon = '<i class="fa fa-user"></i>'
@@ -118,5 +118,12 @@ module UsersHelper
     else
       link_to raw("#{icon} <span>关注</span>"), '#', title: '', 'data-id' => login, class: class_names
     end
+  end
+
+  def reward_user_tag(user, opts = {})
+    return "" if user.blank?
+    return "" unless user.reward_enabled?
+    opts[:class] ||= "btn btn-success"
+    link_to icon_tag("qrcode", label: "打赏支持"), reward_user_path(user), remote: true, class: opts[:class]
   end
 end

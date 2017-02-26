@@ -6,7 +6,7 @@ class NotesController < ApplicationController
   load_and_authorize_resource
 
   def index
-    @notes = current_user.notes.recent_updated.paginate(page: params[:page], per_page: 20)
+    @notes = current_user.notes.recent_updated.page(params[:page])
     fresh_when(@notes)
   end
 
@@ -35,7 +35,7 @@ class NotesController < ApplicationController
 
   def update
     @note = current_user.notes.find(params[:id])
-    if @note.update_attributes(note_params)
+    if @note.update(note_params)
       redirect_to(@note, notice: t('common.update_success'))
     else
       render action: 'edit'

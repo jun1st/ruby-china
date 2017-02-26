@@ -4,7 +4,7 @@ module Admin
     before_action :set_site_node, only: [:show, :edit, :update, :destroy]
 
     def index
-      @site_nodes = SiteNode.order(id: :desc).paginate(page: params[:page], per_page: 20)
+      @site_nodes = SiteNode.order(id: :desc).page(params[:page])
     end
 
     def show
@@ -28,7 +28,7 @@ module Admin
     end
 
     def update
-      if @site_node.update_attributes(site_node_params)
+      if @site_node.update(site_node_params)
         redirect_to(admin_site_nodes_path, notice: 'Site node 更新成功。')
       else
         render action: 'edit'

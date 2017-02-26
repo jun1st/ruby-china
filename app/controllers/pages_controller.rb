@@ -10,7 +10,7 @@ class PagesController < ApplicationController
   end
 
   def recent
-    @pages = Page.recent.paginate(page: params[:page], per_page: 30)
+    @pages = Page.recent.page(params[:page])
     fresh_when(@pages)
   end
 
@@ -61,7 +61,7 @@ class PagesController < ApplicationController
     @page.version_enable = true
     @page.user_id = current_user.id
 
-    if @page.update_attributes(page_params)
+    if @page.update(page_params)
       redirect_to page_path(@page.slug), notice: t('common.update_success')
     else
       render action: 'edit'

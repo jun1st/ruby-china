@@ -3,43 +3,34 @@ module Users
     extend ActiveSupport::Concern
 
     included do
-      before_action :authenticate_user!, only: [:block, :unblock, :blocked, :auth_unbind, :follow, :unfollow]
+      before_action :authenticate_user!, only: [:block, :unblock, :blocked, :follow, :unfollow]
       before_action :only_user!, only: [:topics, :replies, :favorites, :notes,
-                                        :auth_unbind, :block, :unblock, :follow, :unfollow,
-                                        :followers, :following, :calendar]
+                                        :block, :unblock, :follow, :unfollow,
+                                        :followers, :following, :calendar, :reward]
     end
 
     def topics
-      @topics = @user.topics.fields_for_list.recent.paginate(page: params[:page], per_page: 40)
+      @topics = @user.topics.fields_for_list.recent
+      @topics = @topics.page(params[:page])
       fresh_when([@topics])
     end
 
     def replies
-      @replies = @user.replies.without_system.fields_for_list.recent.paginate(page: params[:page], per_page: 20)
+      @replies = @user.replies.without_system.fields_for_list.recent
+      @replies = @replies.page(params[:page])
       fresh_when([@replies])
     end
 
     def favorites
-      @topic_ids = @user.favorite_topic_ids.reverse.paginate(page: params[:page], per_page: 40)
-      @topics = Topic.where(id: @topic_ids).fields_for_list
-      @topics = @topics.to_a.sort_by { |topic| @topic_ids.index(topic.id) }
+      @topics = @user.favorite_topics.includes(:user).order('actions.id desc')
+      @topics = @topics.page(params[:page])
       fresh_when([@topics])
     end
 
     def notes
-      @notes = @user.notes.published.recent.paginate(page: params[:page], per_page: 40)
+      @notes = @user.notes.published.recent
+      @notes = @notes.page(params[:page])
       fresh_when([@notes])
-    end
-
-    def auth_unbind
-      provider = params[:provider]
-      if current_user.authorizations.count <= 1
-        redirect_to edit_user_registration_path, flash: { error: t('users.unbind_warning') }
-        return
-      end
-
-      current_user.authorizations.where(provider: provider).delete_all
-      redirect_to edit_user_registration_path, flash: { warring: t('users.unbind_success', provider: provider.titleize) }
     end
 
     def block
@@ -57,7 +48,7 @@ module Users
         render_404
       end
 
-      @blocked_users = User.where(id: current_user.blocked_user_ids).paginate(page: params[:page], per_page: 20)
+      @block_users = @user.block_users.order('actions.id asc').page(params[:page])
     end
 
     def follow
@@ -71,18 +62,23 @@ module Users
     end
 
     def followers
-      @users = @user.followers.fields_for_list.paginate(page: params[:page], per_page: 60)
+      @users = @user.follow_by_users.order('actions.id asc')
+      @users = @users.page(params[:page]).per(60)
       fresh_when([@users])
     end
 
     def following
-      @users = @user.following.fields_for_list.paginate(page: params[:page], per_page: 60)
+      @users = @user.follow_users.order('actions.id asc')
+      @users = @users.page(params[:page]).per(60)
       render template: '/users/followers' if stale?(etag: [@users], template: 'users/followers')
     end
 
     def calendar
       data = @user.calendar_data
       render json: data if stale?(data)
+    end
+
+    def reward
     end
 
     private

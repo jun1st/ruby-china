@@ -14,7 +14,7 @@ module Admin
       if params[:uid].present?
         @applications = @applications.where(uid: params[:uid])
       end
-      @applications = @applications.order(id: :desc).paginate(page: params[:page], per_page: 20)
+      @applications = @applications.order(id: :desc).page(params[:page])
     end
 
     def show
@@ -38,7 +38,7 @@ module Admin
     end
 
     def update
-      if @application.update_attributes(params[:doorkeeper_application].permit!)
+      if @application.update(params[:doorkeeper_application].permit!)
         redirect_to(admin_applications_path, notice: 'Application 更新成功。')
       else
         render action: 'edit'

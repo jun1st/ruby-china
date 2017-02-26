@@ -23,6 +23,16 @@ describe Reply, type: :model do
         expect(r.save).to eq false
         expect(r.errors.full_messages.join('')).to include('已关闭，不再接受回帖或修改回帖')
       end
+
+      it 'should remove bas reply_to_id' do
+        t = create(:topic)
+        r1 = create(:reply, topic: t)
+        r2 = create(:reply)
+        r = create(:reply, topic: t, reply_to: r2)
+        expect(r.reply_to_id).to eq nil
+        r = create(:reply, topic: t, reply_to: r1)
+        expect(r.reply_to_id).to eq r1.id
+      end
     end
   end
 
@@ -56,10 +66,12 @@ describe Reply, type: :model do
     describe 'should send topic reply notification to followers' do
       let(:u1) { create(:user) }
       let(:u2) { create(:user) }
-      let!(:t) { create(:topic, follower_ids: [u1.id, u2.id]) }
+      let!(:t) { create(:topic) }
 
       # 正常状况
       it 'should work' do
+        u1.follow_topic(t)
+        u2.follow_topic(t)
         expect do
           create :reply, topic: t, user: user
         end.to change(u1.notifications, :count).by(1)
@@ -243,8 +255,13 @@ describe Reply, type: :model do
   describe '.notification_receiver_ids' do
     let(:mentioned_user_ids) { [1, 2, 3] }
     let(:user) { create(:user, follower_ids: [2, 3, 5, 7, 9]) }
-    let(:topic) { create(:topic, user_id: 10, follower_ids: [1, 3, 7, 11, 12, 14, user.id]) }
+    let(:topic) { create(:topic, user_id: 10) }
     let(:reply) { create(:reply, user: user, topic: topic, mentioned_user_ids: mentioned_user_ids) }
+
+    before do
+      allow(topic).to receive(:follow_by_user_ids).and_return([1, 3, 7, 11, 12, 14, user.id])
+      allow(user).to receive(:follow_by_user_ids).and_return([2, 3, 5, 7, 9])
+    end
 
     it 'should be a Array' do
       expect(reply.notification_receiver_ids).to be_a(Array)

@@ -1,10 +1,8 @@
-require 'will_paginate/array'
-
 class UsersController < ApplicationController
   before_action :set_user, except: [:index, :city]
 
   etag { @user }
-  etag { @user&.teams }
+  etag { @user&.teams if @user&.user_type == :user }
 
   include Users::TeamActions
   include Users::UserActions
@@ -17,10 +15,9 @@ class UsersController < ApplicationController
 
   def city
     location = Location.location_find_by_name(params[:id])
-    render_404 and return if location.nil?
-
+    return render_404 if location.nil?
     @users = User.where(location_id: location.id).without_team.fields_for_list
-    @users = @users.order(replies_count: :desc).paginate(page: params[:page], per_page: 60)
+    @users = @users.order(replies_count: :desc).page(params[:page]).per(60)
 
     render_404 if @users.count == 0
   end
@@ -37,12 +34,12 @@ class UsersController < ApplicationController
     # 转向正确的拼写
     if @user.login != params[:id]
       redirect_to user_path(@user.login), status: 301
+      return
     end
 
+    render_404 if @user.deleted?
+
     @user_type = @user.user_type
-    if @user.deleted?
-      render_404
-    end
   end
 
   # Override render method to render difference view path
