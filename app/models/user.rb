@@ -53,8 +53,9 @@ class User < ApplicationRecord
   scope :hot, -> { order(replies_count: :desc).order(topics_count: :desc) }
   scope :without_team, -> { where(type: nil) }
   scope :fields_for_list, lambda {
-    select(:type, :id, :name, :login, :email, :email_md5, :email_public, :avatar, :verified, :state,
-           :tagline, :github, :website, :location, :location_id, :twitter, :co, :team_users_count, :created_at, :updated_at)
+    select(:type, :id, :name, :login, :email, :email_md5, :email_public,
+           :avatar, :verified, :state, :tagline, :github, :website, :location,
+           :location_id, :twitter, :team_users_count, :created_at, :updated_at)
   }
 
   def self.find_by_email(email)
@@ -168,7 +169,7 @@ class User < ApplicationRecord
 
   # 是否能发帖
   def newbie?
-    return false if verified? || hr?
+    return false if verified?
     t = Setting.newbie_limit_time.to_i
     return false if t == 0
     created_at > t.seconds.ago
@@ -190,8 +191,6 @@ class User < ApplicationRecord
       'admin'
     elsif verified?
       'vip'
-    elsif hr?
-      'hr'
     elsif blocked?
       'blocked'
     elsif newbie?

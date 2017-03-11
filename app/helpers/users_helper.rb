@@ -56,7 +56,7 @@ module UsersHelper
     }
 
     if opts[:link] != false
-      link_to(raw(img), user_path(user), options)
+      link_to(raw(img), main_app.user_path(user), options)
     else
       raw img
     end
@@ -121,9 +121,9 @@ module UsersHelper
   end
 
   def reward_user_tag(user, opts = {})
-    return "" if user.blank?
-    return "" unless user.reward_enabled?
-    opts[:class] ||= "btn btn-success"
-    link_to icon_tag("qrcode", label: "打赏支持"), reward_user_path(user), remote: true, class: opts[:class]
+    return '' if user.blank?
+    return '' unless user.reward_enabled?
+    opts[:class] ||= 'btn btn-success'
+    link_to icon_tag('qrcode', label: '打赏支持'), main_app.reward_user_path(user), remote: true, class: opts[:class]
   end
 end

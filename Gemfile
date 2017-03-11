@@ -79,7 +79,7 @@ gem 'redis-objects'
 gem 'redis-session-store'
 
 # Cache
-gem 'second_level_cache', '2.3.0.beta'
+gem 'second_level_cache'
 
 # Setting
 gem 'rails-settings-cached'
@@ -118,11 +118,17 @@ gem 'status-page'
 
 gem 'bundler-audit', require: false
 
+# Homeland Plugins
+gem 'homeland-press'
+gem 'homeland-jobs'
+gem 'homeland-wiki'
+
+gem 'sdoc', '1.0.0.rc1'
+
 group :development do
   gem 'derailed'
   # Better Errors
   gem 'better_errors'
-  gem 'binding_of_caller'
   gem 'spring'
   gem 'spring-commands-rspec'
 end

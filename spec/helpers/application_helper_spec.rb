@@ -30,6 +30,42 @@ describe ApplicationHelper, type: :helper do
         <iframe width="560" height="315" src="https://www.youtube.com/embed/gFQpxAKx_ds" class="embed" frameborder="0" allowfullscreen=""></iframe>
         </span>'
         expect(helper.sanitize_markdown(html)).to eq(html)
+
+        html = '<span class="embed-responsive embed-responsive-16by9">
+        <iframe width="560" height="315" src="http://www.youtube.com/embed/gFQpxAKx_ds" class="embed" frameborder="0" allowfullscreen=""></iframe>
+        </span>'
+        expect(helper.sanitize_markdown(html)).to eq(html)
+
+        html = '<span class="embed-responsive embed-responsive-16by9">
+        <iframe width="560" height="315" src="//www.youtube.com/embed/gFQpxAKx_ds" class="embed" frameborder="0" allowfullscreen=""></iframe>
+        </span>'
+        expect(helper.sanitize_markdown(html)).to eq(html)
+
+        html = '<iframe width="560" height="315" src="//www.youtube.com/aaa" class="embed" frameborder="0" allowfullscreen=""></iframe>'
+        expect(helper.sanitize_markdown(html)).to eq('')
+      end
+
+      it 'should allow youku iframe' do
+        html = '<span class="embed-responsive embed-responsive-16by9">
+        <iframe width="560" height="315" src="https://player.youku.com/embed/XMjUzMTk4NTk2MA==" class="embed" frameborder="0" allowfullscreen=""></iframe>
+        </span>'
+        expect(helper.sanitize_markdown(html)).to eq(html)
+
+        html = '<span class="embed-responsive embed-responsive-16by9">
+        <iframe width="560" height="315" src="http://player.youku.com/embed/XMjUzMTk4NTk2MA==" class="embed" frameborder="0" allowfullscreen=""></iframe>
+        </span>'
+        expect(helper.sanitize_markdown(html)).to eq(html)
+
+        html = '<span class="embed-responsive embed-responsive-16by9">
+        <iframe width="560" height="315" src="//player.youku.com/embed/XMjUzMTk4NTk2MA==" class="embed" frameborder="0" allowfullscreen=""></iframe>
+        </span>'
+        expect(helper.sanitize_markdown(html)).to eq(html)
+
+        html = '<iframe width="560" height="315" src="//player.youku.com/XMjUzMTk4NTk2MA==" class="embed" frameborder="0" allowfullscreen=""></iframe>'
+        expect(helper.sanitize_markdown(html)).to eq('')
+
+        html = '<iframe width="560" height="315" src="//www.youku.com/XMjUzMTk4NTk2MA==" class="embed" frameborder="0" allowfullscreen=""></iframe>'
+        expect(helper.sanitize_markdown(html)).to eq('')
       end
     end
 
@@ -164,6 +200,26 @@ describe ApplicationHelper, type: :helper do
   describe 'insert_code_menu_items_tag' do
     it 'should work' do
       expect(helper.insert_code_menu_items_tag).to include('data-lang="ruby"')
+    end
+  end
+
+  describe 'render_list' do
+    it 'should work' do
+      html = helper.render_list class: 'nav navbar' do |li|
+        li << helper.link_to("foo", "/foo")
+        li << helper.link_to("bar", "/bar")
+      end
+      expect(html).to eq(%(<ul class="nav navbar"><li class=""><a href="/foo">foo</a></li><li class=""><a href="/bar">bar</a></li></ul>))
+    end
+
+    describe 'render_list_items' do
+      it 'should work' do
+        html = helper.render_list_items do |li|
+          li << helper.link_to("bar", "/bar")
+          li << helper.link_to("foo", "/foo")
+        end
+        expect(html).to eq(%(<li class=""><a href="/bar">bar</a></li><li class=""><a href="/foo">foo</a></li>))
+      end
     end
   end
 end

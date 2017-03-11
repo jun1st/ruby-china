@@ -40,7 +40,7 @@ class TopicsController < ApplicationController
     @node = Node.find(params[:id])
     @topics = @node.topics.last_actived.fields_for_list
     @topics = @topics.includes(:user).page(params[:page])
-    @page_title = @node.id == Node.job.id ? @node.name : "#{@node.name} &raquo; #{t('menu.topics')}"
+    @page_title = "#{@node.name} &raquo; #{t('menu.topics')}"
     @page_title = [@node.name, t('menu.topics')].join(' · ')
     if stale?(etag: [@node, @topics], template: 'topics/index')
       render action: 'index'
@@ -65,8 +65,8 @@ class TopicsController < ApplicationController
 
   # GET /topics/favorites
   def favorites
-    @topics = Topic.where(id: current_user.favorite_topic_ids).fields_for_list
-    @topics = @topics.recent.page(params[:page])
+    @topics = current_user.favorite_topics.includes(:user).fields_for_list
+    @topics = @topics.page(params[:page])
     render action: 'index' if stale?(etag: @topics, template: 'topics/index')
   end
 
@@ -224,9 +224,11 @@ class TopicsController < ApplicationController
   end
 
   def set_special_node_active_menu
-    case @node.try(:id)
-    when Node.job.id
-      @current = ['/jobs']
+    if Setting.has_module?(:jobs)
+      # FIXME: Monkey Patch for homeland-jobs
+      if @node&.id == 25
+        @current = ['/jobs']
+      end
     end
   end
 end
